@@ -1,284 +1,347 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import pydeck as pdk
-import base64, os
 
-def _load_logo():
-    try:
-        with open("naturgy_logo.png", "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except Exception:
-        return None
-LOGO_B64 = _load_logo()
+# ==========================================================================
+# CONFIGURACIÓN DE PÁGINA
+# ==========================================================================
+st.set_page_config(
+    page_title="Simulador Bio-LNG | Naturgy México",
+    page_icon="naturgy_logo.png",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
+# ==========================================================================
+# CONSTANTES DEL MODELO  (verificar contra el reporte antes de presentar)
+# ==========================================================================
+# Referencia operativa: planta Brimex Energy
+BIOMASA_REF = 800.0          # t/día de biomasa (referencia Brimex)
+BIOMETANO_REF = 21600.0      # m³/día de biometano (referencia Brimex)
+RENDIMIENTO = BIOMETANO_REF / BIOMASA_REF   # m³ biometano por t de biomasa = 27
 
-st.set_page_config(page_title="Naturgy · Simulador Bio-LNG Jalisco", page_icon="◆", layout="wide", initial_sidebar_state="expanded")
+ENERGIA_BIOMETANO = 0.0373   # GJ por m³ de biometano (~96% CH4, PCI)
+ENERGIA_LNG = 52.0           # GJ por tonelada de Bio-LNG (PCI ~50 MJ/kg)
 
-# ════════════════════════════════════════════════════════════════════════════
-#  IDENTIDAD VISUAL NATURGY
-#  Azul corporativo Pantone 302C ≈ #00497B  ·  Naranja 144C ≈ #ED8B00
-# ════════════════════════════════════════════════════════════════════════════
-AZUL = "#00497B"        # azul Naturgy profundo
-AZUL_CLARO = "#0073B7"  # azul medio
-NARANJA = "#ED8B00"     # naranja Naturgy (isotipo)
-VERDE = "#5BA829"       # verde energía / sostenibilidad
-ROJO = "#C0264A"
-GRIS_TX = "#3C4A57"
-GRIS_SUAVE = "#6B7A88"
-GRIS_BG = "#F4F6F8"
+# Costos (USD/GJ)
+COSTO_PRODUCCION = 3.34      # costo de producción del biometano (cifra del estudio)
+COSTO_LICUEFACCION = 2.50    # costo adicional de licuefacción por GJ
+COSTO_TRANSPORTE = 1.20      # costo de transporte criogénico por GJ
 
-SVG = {
-    "biomasa": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5-2 7-6 7-11V4l-7 2-7-2v7c0 5 2 9 7 11z"/><path d="M12 22V9"/><path d="M9 12l3-2 3 2"/></svg>',
-    "digestor": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v8c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><circle cx="10" cy="11" r="0.8" fill="{c}"/><circle cx="13" cy="13" r="0.8" fill="{c}"/></svg>',
-    "upgrading": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="4" height="12" rx="1"/><rect x="10" y="4" width="4" height="15" rx="1"/><rect x="16" y="9" width="4" height="10" rx="1"/><path d="M2 19h20"/></svg>',
-    "frio": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3"/><path d="M3 7l18 10M3 7l4 .5M3 7l.5 4M21 17l-4-.5M21 17l-.5-4"/><path d="M21 7L3 17M21 7l-4 .5M21 7l-.5 4M3 17l4-.5M3 17l.5-4"/></svg>',
-    "split": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h6"/><path d="M9 12l5-6h7"/><path d="M9 12l5 6h7"/><circle cx="9" cy="12" r="1.5" fill="{c}"/></svg>',
-    "camion": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h11v9H1z"/><path d="M12 11h5l4 4v2h-9z"/><circle cx="5.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></svg>',
-    "flama": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 4 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 .5 1.5 1.5 2 2 2 0-2-1-4 1-7z"/></svg>',
-}
-def svgico(name, color):
-    return SVG[name].replace("{c}", color)
+# Ambiental
+CO2_CAPTURADO = 18500.0      # t CO2/año (estimación escalada de Brimex)
+FACTOR_DIESEL = 2.68         # kg CO2 por litro de diésel sustituido
+DIESEL_POR_CLIENTE = 500000.0  # litros/año de diésel desplazado por cliente
 
+DIAS_ANIO = 365
 
+# ==========================================================================
+# ESTILOS
+# ==========================================================================
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
 
-st.markdown(f"""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Narrow:wght@600;700&display=swap');
+    html, body, [class*="css"], .stApp, .stMarkdown, p, span, label, div {
+        font-family: 'Source Sans 3', sans-serif !important;
+    }
 
-    .stApp {{ background: #FFFFFF; }}
-    * {{ font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif !important; }}
-    h1, h2, h3 {{ font-family: 'Archivo', sans-serif !important; }}
+    /* Fondo blanco del cuerpo */
+    .stApp {
+        background-color: #FFFFFF;
+        color: #1A1A1A;
+    }
 
-    /* ── BARRA SUPERIOR estilo header de naturgy.com ── */
-    .ng-topbar {{
-        background: {AZUL}; margin: -1.5rem -4rem 0 -4rem; padding: 16px 48px;
-        display: flex; align-items: center; justify-content: space-between;
-    }}
-    .ng-logo {{ display: flex; align-items: center; gap: 10px; }}
-    .ng-logo img {{ display: block; }}
-    .ng-logo-mark {{ width: 30px; height: 30px; background: {NARANJA};
-        border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: inline-block; }}
-    .ng-logo-text {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
-        font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }}
-    .ng-nav {{ color: #B8D4E8 !important; font-size: 13px; font-weight: 500; }}
+    /* Sidebar verde Naturgy */
+    [data-testid="stSidebar"] {
+        background-color: #0E3A2A;
+    }
+    [data-testid="stSidebar"] * {
+        color: #FFFFFF !important;
+    }
 
-    /* ── HERO ── */
-    .ng-hero {{ background: {AZUL}; margin: 0 -4rem 24px -4rem; padding: 34px 48px 40px;
-        color: #fff; }}
-    .ng-eyebrow {{ color: {NARANJA} !important; font-size: 12px; font-weight: 700;
-        letter-spacing: 2px; text-transform: uppercase; }}
-    .ng-title {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
-        font-size: 40px; font-weight: 800; line-height: 1.05; margin: 8px 0 6px; letter-spacing: -0.5px; }}
-    .ng-sub {{ color: #B8D4E8 !important; font-size: 15px; font-weight: 400; }}
+    /* Encabezados */
+    h1, h2, h3 {
+        color: #0E3A2A;
+        font-weight: 700;
+    }
 
-    section[data-testid="stSidebar"] {{ background: {AZUL}; border: none; min-width: 320px; }}
-    section[data-testid="stSidebar"] * {{ color: #DCEAF4 !important; }}
-    section[data-testid="stSidebar"] h3 {{ color: #FFFFFF !important; font-family: 'Archivo' !important; }}
-    section[data-testid="stSidebar"] hr {{ border-color: #1A5C87; }}
-    .side-eyebrow {{ color: {NARANJA} !important; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }}
+    /* Arregla el botón de colapsar sidebar (oculta el texto 'keyboard_double') */
+    [data-testid="collapsedControl"] {
+        color: transparent !important;
+    }
+    [data-testid="collapsedControl"]::after {
+        content: "›";
+        color: #0E3A2A;
+        font-size: 26px;
+        font-weight: 700;
+    }
+    [data-testid="stSidebarCollapseButton"] {
+        color: transparent !important;
+    }
+    [data-testid="stSidebarCollapseButton"]::after {
+        content: "‹";
+        color: #FFFFFF;
+        font-size: 26px;
+        font-weight: 700;
+    }
 
-    [data-testid="collapsedControl"] {{ display: block !important; background: {AZUL} !important; border-radius: 0 8px 8px 0; padding: 8px 6px !important; }}
-    [data-testid="collapsedControl"] span, [data-testid="collapsedControl"] p {{ font-size: 0 !important; }}
-    [data-testid="collapsedControl"]::after {{ content: "›"; color: #FFFFFF; font-size: 24px; font-weight: 700; }}
-    [data-testid="stSidebarCollapseButton"] span, [data-testid="stSidebarCollapseButton"] p {{ font-size: 0 !important; }}
-    [data-testid="stSidebarCollapseButton"]::after {{ content: "‹"; color: #DCEAF4; font-size: 22px; font-weight: 700; }}
+    /* Badge de viabilidad */
+    .badge {
+        display: inline-block;
+        padding: 10px 22px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 18px;
+        margin-top: 6px;
+    }
+    .badge-ok { background-color: #1B7A4B; color: #FFFFFF; }
+    .badge-no { background-color: #B23A48; color: #FFFFFF; }
 
-    h1, h2, h3, h4 {{ color: {AZUL} !important; }}
-    p, label, span, div {{ color: {GRIS_TX}; }}
+    /* Tarjetas de métricas */
+    [data-testid="stMetric"] {
+        background-color: #F4F7F5;
+        border: 1px solid #E0E6E2;
+        border-radius: 8px;
+        padding: 14px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-    .ng-section {{ display: flex; align-items: baseline; gap: 12px; margin: 22px 0 14px; }}
-    .ng-section-bar {{ width: 4px; height: 22px; background: {NARANJA}; border-radius: 2px; }}
-    .ng-section-title {{ font-family: 'Archivo' !important; font-size: 19px; font-weight: 700; color: {AZUL} !important; }}
-    .ng-section-ref {{ font-size: 11px; color: {GRIS_SUAVE} !important; letter-spacing: 1px; margin-left: auto; }}
+# ==========================================================================
+# SIDEBAR — PARÁMETROS
+# ==========================================================================
+with st.sidebar:
+    st.image("naturgy_logo.png", width=160)
+    st.markdown("## Parámetros de la planta")
 
-    .card {{ background: #FFFFFF; border: 1px solid #E3E9 EE; border: 1px solid #E3E9EE; border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,73,123,0.06); }}
-    .kpi-label {{ font-size: 11px; color: {GRIS_SUAVE}; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; }}
-    .kpi-value {{ font-family: 'Archivo' !important; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-top: 4px; }}
-    .kpi-unit {{ font-size: 13px; color: {GRIS_SUAVE}; font-weight: 500; }}
+    biomasa = st.slider(
+        "Entrada de biomasa (t/día)",
+        min_value=200, max_value=1600, value=800, step=50,
+        help="Referencia Brimex Energy: 800 t/día",
+    )
 
-    .badge-ok {{ background: #EDF7E6; border: 1px solid {VERDE}; color: #3D7A12; border-radius: 8px; padding: 13px; text-align: center; font-weight: 700; font-size: 14px; }}
-    .badge-no {{ background: #FBECEF; border: 1px solid {ROJO}; color: #A01E3C; border-radius: 8px; padding: 13px; text-align: center; font-weight: 700; font-size: 14px; }}
+    st.markdown("---")
+    ruta = st.radio(
+        "Ruta de valorización",
+        options=["Bio-LNG (licuefacción)", "Red Naturgy (biometano gaseoso)"],
+        index=0,
+    )
+    es_biolng = ruta.startswith("Bio-LNG")
 
-    .ng-status {{ background: {AZUL}; border-radius: 10px; padding: 12px 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }}
-    .ng-status span {{ color: #B8D4E8 !important; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }}
-    .ng-status .on {{ color: {NARANJA} !important; }}
-    @keyframes pulse {{ 0%,100% {{ opacity: 1; }} 50% {{ opacity: 0.45; }} }}
-    .ng-status .on {{ animation: pulse 2s ease-in-out infinite; }}
-
-    .footer-note {{ font-size: 11px; color: #9AA8B4; text-align: center; }}
-    hr {{ border-color: #E3E9EE; }}
-    #MainMenu, footer, header {{ visibility: hidden; }}
-
-    @keyframes flowdot {{ 0% {{ left: 0%; opacity: 0; }} 12% {{ opacity: 1; }} 88% {{ opacity: 1; }} 100% {{ left: 100%; opacity: 0; }} }}
-    .proc-wrap {{ display: flex; align-items: stretch; margin: 4px 0 8px; border: 1px solid #E3E9EE; border-radius: 10px; overflow: hidden; background: #FAFCFD; }}
-    .proc-step {{ flex: 1; padding: 16px 8px; text-align: center; border-right: 1px solid #EDF1F4; }}
-    .proc-step:last-child {{ border-right: none; }}
-    .proc-ico {{ font-size: 26px; line-height: 1; }}
-    .proc-name {{ font-size: 10px; font-weight: 700; color: {AZUL}; letter-spacing: 0.3px; margin-top: 7px; text-transform: uppercase; }}
-    .proc-val {{ font-family: 'Archivo' !important; font-size: 14px; font-weight: 700; margin-top: 2px; }}
-    .proc-conn {{ width: 40px; display: flex; align-items: center; }}
-    .proc-line {{ width: 100%; height: 2px; background: #DDE7EE; position: relative; overflow: hidden; }}
-    .proc-line::after {{ content: ""; position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; animation: flowdot 2.2s linear infinite; }}
-</style>
-""", unsafe_allow_html=True)
-
-# ── BARRA SUPERIOR + HERO estilo naturgy.com
-if LOGO_B64:
-    logo_html = f'<img src="data:image/png;base64,{LOGO_B64}" style="height:34px; width:auto;" alt="Naturgy"/>'
-else:
-    logo_html = '<span class="ng-logo-mark"></span><span class="ng-logo-text">naturgy</span>'
-st.markdown(f"""
-<div class="ng-topbar">
-    <div class="ng-logo">{logo_html}</div>
-    <span class="ng-nav">México · Transición Energética · Biometano</span>
-</div>
-<div class="ng-hero">
-    <div class="ng-eyebrow">Propuesta de Coinversión · Simulador de Escenarios</div>
-    <div class="ng-title">Cadena de Valor del Bio-LNG</div>
-    <div class="ng-sub">Lagos de Moreno, Región Altos Norte de Jalisco · Referente operativo: Brimex Energy · DS3001B Tec de Monterrey 2026</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── SIDEBAR ──────────────────────────────────────────────────────────────────
-st.sidebar.markdown('<div class="side-eyebrow">Parámetros de operación</div>', unsafe_allow_html=True)
-st.sidebar.markdown("### Ajusta los escenarios")
-st.sidebar.markdown('<p style="color:#9CC3DC; font-size:12px; margin-top:-8px;">Modifica los valores para simular distintos escenarios en tiempo real.</p>', unsafe_allow_html=True)
-st.sidebar.markdown("<hr>", unsafe_allow_html=True)
-biomasa = st.sidebar.slider("Biomasa de entrada (t/día)", 200, 1600, 800, 50, help="Referente Brimex: 800 t/día")
-st.sidebar.markdown("**Ruta del producto**")
-ruta = st.sidebar.radio("ruta", ["Bio-LNG (transporte en camión)", "Red Naturgy (inyección local)"], label_visibility="collapsed")
-st.sidebar.markdown("<hr>", unsafe_allow_html=True)
-st.sidebar.markdown("**Mercado y precios**")
-precio_lng = st.sidebar.slider("Precio Bio-LNG (USD/GJ)", 15.0, 45.0, 30.0, 0.5, help="Rango: 21–40.5 USD/GJ")
-feed_in = st.sidebar.slider("Feed-in tariff red (USD/GJ)", 0.0, 12.0, 0.0, 0.5, help="Francia: hasta ~11. México: 0")
-precio_carbono = st.sidebar.slider("Crédito de carbono (USD/ton CO₂eq)", 0, 25, 0, 1)
-st.sidebar.markdown("<hr>", unsafe_allow_html=True)
-st.sidebar.markdown("**Sustitución de diésel**")
-clientes_diesel = st.sidebar.slider("Clientes activos que sustituyen diésel", 0, 5, 3, 1, help="AKRON, Lala, 2 CEDIS Walmart, Bimbo")
-
-# ── CÁLCULOS ─────────────────────────────────────────────────────────────────
-factor = biomasa / 800.0
-biometano_m3d = biomasa * 27.0
-biolng_m3d = biometano_m3d * 0.33
-GJ_m3 = 0.0373
-gj_anual = biometano_m3d * 365 * GJ_m3
-co2_evitado_ton = factor * 18500
-ingreso_carbono = (co2_evitado_ton * precio_carbono) / 1_000_000
-costo_lng = 22.0
-ganancia_lng = (precio_lng - costo_lng) * gj_anual * 0.33 / 1_000_000 + ingreso_carbono
-costo_bm = 15.0
-precio_red = 3.34 + feed_in
-ganancia_red = (precio_red - costo_bm) * gj_anual / 1_000_000 + ingreso_carbono
-diesel_sustituido = biolng_m3d * 365 * 0.58 * (clientes_diesel / 3.0)
-co2_diesel = diesel_sustituido * 2.68 / 1000
-es_biolng = ruta.startswith("Bio-LNG")
-ganancia_actual = ganancia_lng if es_biolng else ganancia_red
-viable = ganancia_actual >= 0
-signo = "+" if ganancia_actual >= 0 else ""
-
-# ── BARRA DE ESTADO ──────────────────────────────────────────────────────────
-estado = "OPERANDO · RUTA BIO-LNG" if es_biolng else "OPERANDO · RUTA RED"
-st.markdown(f'''<div class="ng-status">
-    <span class="on">● {estado}</span>
-    <span>CARGA {factor*100:.0f}%</span>
-    <span>REFERENTE BRIMEX 800 t/d</span>
-    <span>{"ESTADO: VIABLE" if viable else "ESTADO: NO VIABLE"}</span>
-</div>''', unsafe_allow_html=True)
-
-# ── TIRA DE PROCESO ──────────────────────────────────────────────────────────
-rc = VERDE if es_biolng else AZUL_CLARO
-destino = "BIO-LNG · CAMIÓN" if es_biolng else "BIOMETANO · RED"
-ico4 = svgico("frio", rc) if es_biolng else svgico("split", rc)
-ico5 = svgico("camion", NARANJA) if es_biolng else svgico("flama", NARANJA)
-st.markdown(f"""
-<div class="proc-wrap">
-    <div class="proc-step"><div class="proc-ico" style="color:{NARANJA};">{svgico("biomasa", NARANJA)}</div><div class="proc-name">Biomasa</div><div class="proc-val" style="color:{NARANJA};">{biomasa:.0f} t/d</div></div>
-    <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico" style="color:{rc};">{svgico("digestor", rc)}</div><div class="proc-name">Biodigestor</div><div class="proc-val" style="color:{rc};">{biomasa*0.9:.0f} t</div></div>
-    <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico" style="color:{rc};">{svgico("upgrading", rc)}</div><div class="proc-name">Upgrading</div><div class="proc-val" style="color:{rc};">{biometano_m3d:,.0f} m³/d</div></div>
-    <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico" style="color:{rc};">{ico4}</div><div class="proc-name">{"Licuefacción" if es_biolng else "Bifurcación"}</div><div class="proc-val" style="color:{rc};">{biolng_m3d:,.0f} m³/d</div></div>
-    <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico" style="color:{NARANJA};">{ico5}</div><div class="proc-name">{destino}</div><div class="proc-val" style="color:{NARANJA};">{clientes_diesel} clientes</div></div>
-</div>
-<style>.proc-line::after {{ background: {rc}; }} .proc-ico svg {{ vertical-align: middle; }}</style>
-""", unsafe_allow_html=True)
-
-# ── KPIs ─────────────────────────────────────────────────────────────────────
-st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Indicadores clave</div><div class="ng-section-ref">FIG. 1 · TIEMPO REAL</div></div>', unsafe_allow_html=True)
-def kpi(col, label, value, unit, color):
-    col.markdown(f'<div class="card"><div class="kpi-label">{label}</div><div class="kpi-value" style="color:{color};">{value} <span class="kpi-unit">{unit}</span></div></div>', unsafe_allow_html=True)
-m1, m2, m3, m4 = st.columns(4)
-kpi(m1, "Ganancia anual estimada", f"{signo}{ganancia_actual:,.1f}", "M USD/año", VERDE if viable else ROJO)
-kpi(m2, "Biometano producido", f"{biometano_m3d:,.0f}", "m³/día", AZUL)
-kpi(m3, "Bio-LNG generado", f"{biolng_m3d:,.0f}", "m³/día", AZUL_CLARO)
-kpi(m4, "CO₂ evitado", f"{co2_evitado_ton:,.0f}", "ton/año", NARANJA)
-
-# ── GAUGES ───────────────────────────────────────────────────────────────────
-def gauge(value, title, vmin, vmax, color, ref=None):
-    ind = dict(mode="gauge+number" + ("+delta" if ref is not None else ""), value=value,
-        number={'font': {'size': 24, 'color': AZUL, 'family': 'Archivo'}},
-        title={'text': title, 'font': {'size': 11, 'color': GRIS_SUAVE, 'family': 'Archivo'}},
-        gauge={'axis': {'range': [vmin, vmax], 'tickcolor': '#C5D2DC', 'tickfont': {'size': 9, 'color': '#9AA8B4'}},
-            'bar': {'color': color, 'thickness': 0.30}, 'bgcolor': '#F1F5F8', 'borderwidth': 1, 'bordercolor': '#E3E9EE',
-            'steps': [{'range': [vmin, vmin+(vmax-vmin)*0.5], 'color': '#EAF1F6'}, {'range': [vmin+(vmax-vmin)*0.5, vmax], 'color': '#DFEAF2'}],
-            'threshold': {'line': {'color': AZUL, 'width': 2}, 'thickness': 0.85, 'value': value}})
-    if ref is not None:
-        ind['delta'] = {'reference': ref, 'increasing': {'color': VERDE}, 'decreasing': {'color': ROJO}, 'font': {'size': 12, 'family': 'Archivo'}}
-    fig = go.Figure(go.Indicator(**ind))
-    fig.update_layout(height=200, margin=dict(l=20, r=20, t=42, b=8), paper_bgcolor='#FFFFFF', transition={'duration': 500, 'easing': 'cubic-in-out'})
-    return fig
-
-g1, g2, g3, g4 = st.columns(4)
-g1.plotly_chart(gauge(biomasa, "BIOMASA t/día", 200, 1600, NARANJA, ref=800), use_container_width=True, key="g1")
-g2.plotly_chart(gauge(biometano_m3d, "BIOMETANO m³/día", 0, 43200, AZUL, ref=21600), use_container_width=True, key="g2")
-g3.plotly_chart(gauge(biolng_m3d, "BIO-LNG m³/día", 0, 14256, AZUL_CLARO, ref=7128), use_container_width=True, key="g3")
-g4.plotly_chart(gauge(ganancia_actual, "GANANCIA M USD/año", -8, 4, VERDE if viable else ROJO, ref=0), use_container_width=True, key="g4")
-
-# ── GRÁFICA + MAPA ───────────────────────────────────────────────────────────
-left, right = st.columns([1.3, 1])
-with left:
-    st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Curva de ganancia por escala</div><div class="ng-section-ref">FIG. 2</div></div>', unsafe_allow_html=True)
-    xs = np.arange(200, 1601, 50)
-    gan_lng_x = (precio_lng - costo_lng) * (xs * 27 * 365 * GJ_m3 * 0.33) / 1_000_000
-    gan_red_x = (precio_red - costo_bm) * (xs * 27 * 365 * GJ_m3) / 1_000_000
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=xs, y=gan_lng_x, name="Bio-LNG", line=dict(color=VERDE, width=3), fill='tozeroy', fillcolor='rgba(91,168,41,0.08)'))
-    fig.add_trace(go.Scatter(x=xs, y=gan_red_x, name="Red Naturgy (con feed-in)", line=dict(color=AZUL_CLARO, width=2, dash='dot')))
-    fig.add_hline(y=0, line_color="#C5D2DC", line_width=1)
-    fig.add_vline(x=biomasa, line_color=NARANJA, line_width=2, line_dash="dash", annotation_text=f"  {biomasa} t/d", annotation_font_color=NARANJA)
-    fig.update_layout(plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", font=dict(color=GRIS_TX, family="Barlow", size=12), height=290, margin=dict(l=10, r=10, t=10, b=10), legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12), xaxis=dict(title="Biomasa (t/día)", gridcolor="#EDF1F4", zeroline=False), yaxis=dict(title="Ganancia (M USD/año)", gridcolor="#EDF1F4", zeroline=False))
-    st.plotly_chart(fig, use_container_width=True, key="curva")
-    st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Sustitución de diésel</div><div class="ng-section-ref">FIG. 3</div></div>', unsafe_allow_html=True)
-    d1, d2 = st.columns(2)
-    kpi(d1, "Diésel sustituido", f"{diesel_sustituido/1000:,.0f}", "mil L/año", NARANJA)
-    kpi(d2, "CO₂ evitado (sustitución)", f"{co2_diesel:,.0f}", "ton/año", VERDE)
-
-with right:
-    st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Corredor de distribución</div><div class="ng-section-ref">FIG. 4 · JALISCO</div></div>', unsafe_allow_html=True)
-    PLANTA = {"lat": 21.3795, "lon": -101.9180}
-    clientes = pd.DataFrame([
-        {"name": "AKRON · Lagos de Moreno", "lat": 21.3850, "lon": -101.9050, "km": 7},
-        {"name": "Grupo Lala · Aguascalientes", "lat": 21.8550, "lon": -102.2960, "km": 82},
-        {"name": "Walmart CEDIS · Silao Bajío", "lat": 20.9480, "lon": -101.4280, "km": 92},
-        {"name": "Walmart CEDIS · Tlajomulco GDL", "lat": 20.4700, "lon": -103.4450, "km": 197},
-        {"name": "Grupo Bimbo · Zapopan GDL", "lat": 20.7060, "lon": -103.4530, "km": 198},
-    ])
-    planta_df = pd.DataFrame([{"name": "PLANTA Bio-LNG · Lagos de Moreno", "lat": PLANTA["lat"], "lon": PLANTA["lon"]}])
-    rutas = pd.DataFrame([{"fl": PLANTA["lat"], "fo": PLANTA["lon"], "tl": r["lat"], "to": r["lon"]} for _, r in clientes.iterrows()])
-    layer_lines = pdk.Layer("LineLayer", rutas, get_source_position=["fo", "fl"], get_target_position=["to", "tl"], get_color=[237, 139, 0, 180], get_width=3)
-    layer_cli = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"], get_color=[0, 73, 123, 230], get_radius=7000, pickable=True)
-    layer_pl = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"], get_color=[237, 139, 0, 255], get_radius=11000, pickable=True)
-    st.pydeck_chart(pdk.Deck(map_style="road", initial_view_state=pdk.ViewState(latitude=21.1, longitude=-102.6, zoom=6.5, pitch=40), layers=[layer_lines, layer_cli, layer_pl], tooltip={"text": "{name}"}), use_container_width=True)
-    if viable:
-        st.markdown(f'<div class="badge-ok">VIABLE · {signo}{ganancia_actual:,.1f} M USD/año</div>', unsafe_allow_html=True)
+    st.markdown("---")
+    if es_biolng:
+        precio_lng = st.slider(
+            "Precio Bio-LNG (USD/ton)",
+            min_value=400, max_value=1200, value=700, step=25,
+        )
     else:
-        st.markdown(f'<div class="badge-no">NO VIABLE · ajusta precio o feed-in</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="card" style="margin-top:10px;"><div class="kpi-label">Ruta seleccionada</div><div style="color:{AZUL}; font-weight:700; margin-top:4px; font-size:15px;">{ruta}</div><div style="color:{GRIS_SUAVE}; font-size:12px; margin-top:6px; line-height:1.5;">{"El Bio-LNG viaja en camión hasta 198 km y sustituye diésel en industria y centros de distribución." if es_biolng else "El biometano se inyecta a la red local de Naturgy en zona Bajío Sur."}</div></div>', unsafe_allow_html=True)
+        tarifa = st.slider(
+            "Tarifa de inyección a red (USD/GJ)",
+            min_value=3.0, max_value=20.0, value=8.0, step=0.5,
+            help="Umbral de viabilidad reportado: 10–20 USD/GJ",
+        )
 
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown('<p class="footer-note">Modelo basado en referente operativo Brimex Energy (800 t/d, 21,600 m³/d) · IEA 2025 · EIA 2025 · Gildea et al. 2025 · Capra et al. 2019 · SIAP 2023 · Clientes: AKRON, Grupo Lala, Walmart CEDIS, Grupo Bimbo</p>', unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("### Beneficios adicionales")
+    precio_carbono = st.slider(
+        "Precio de bonos de carbono (USD/t CO₂)",
+        min_value=0, max_value=120, value=30, step=5,
+    )
+    clientes_diesel = st.slider(
+        "Clientes cercanos que sustituyen diésel",
+        min_value=0, max_value=20, value=3, step=1,
+    )
 
+# ==========================================================================
+# CÁLCULOS
+# ==========================================================================
+def calcular_ganancia(biomasa_t, es_lng, precio_o_tarifa, precio_co2, n_clientes):
+    biometano_dia = biomasa_t * RENDIMIENTO          # m³/día
+    energia_dia = biometano_dia * ENERGIA_BIOMETANO  # GJ/día
+    energia_anio = energia_dia * DIAS_ANIO           # GJ/año
+
+    if es_lng:
+        lng_anio = energia_anio / ENERGIA_LNG        # toneladas/año
+        ingreso = lng_anio * precio_o_tarifa
+        costo = energia_anio * (COSTO_PRODUCCION + COSTO_LICUEFACCION + COSTO_TRANSPORTE)
+    else:
+        ingreso = energia_anio * precio_o_tarifa
+        costo = energia_anio * COSTO_PRODUCCION
+
+    # Beneficios ambientales
+    ingreso_carbono = CO2_CAPTURADO * precio_co2
+    co2_diesel = n_clientes * DIESEL_POR_CLIENTE * FACTOR_DIESEL / 1000.0  # t CO2/año
+    ingreso_diesel = co2_diesel * precio_co2
+
+    ganancia = ingreso + ingreso_carbono + ingreso_diesel - costo
+    return {
+        "biometano_dia": biometano_dia,
+        "energia_anio": energia_anio,
+        "ingreso": ingreso,
+        "costo": costo,
+        "ingreso_carbono": ingreso_carbono,
+        "ingreso_diesel": ingreso_diesel,
+        "co2_diesel": co2_diesel,
+        "ganancia": ganancia,
+    }
+
+
+valor = precio_lng if es_biolng else tarifa
+res = calcular_ganancia(biomasa, es_biolng, valor, precio_carbono, clientes_diesel)
+
+# ==========================================================================
+# CUERPO PRINCIPAL
+# ==========================================================================
+st.title("Simulador de la cadena de valor Bio-LNG")
+st.markdown(
+    "Modelo de coinversión para **Naturgy México** — Lagos de Moreno, Jalisco. "
+    "Referencia operativa: planta Brimex Energy (800 t/día → 21,600 m³/día de biometano)."
+)
+
+# --- Cadena de valor con imágenes dinámicas ---
+st.markdown("### Cadena de valor")
+
+if es_biolng:
+    pasos = [
+        ("biomasa_img.png", "Biomasa"),
+        ("biodigestor.png", "Biodigestión"),
+        ("Upgrading.png", "Upgrading"),
+        ("Licuefacción.png", "Licuefacción"),
+        ("Transporte.png", "Transporte"),
+    ]
+else:
+    # Ruta gaseosa: sin licuefacción
+    pasos = [
+        ("biomasa_img.png", "Biomasa"),
+        ("biodigestor.png", "Biodigestión"),
+        ("Upgrading.png", "Upgrading"),
+        ("Transporte.png", "Inyección a red"),
+    ]
+
+cols = st.columns(len(pasos))
+for col, (img, titulo) in zip(cols, pasos):
+    with col:
+        st.image(img, use_container_width=True)
+        st.markdown(f"<p style='text-align:center;font-weight:600'>{titulo}</p>",
+                    unsafe_allow_html=True)
+
+st.markdown("---")
+
+# --- Resultados económicos ---
+st.markdown("### Resultados (anuales)")
+
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Biometano", f"{res['biometano_dia']:,.0f} m³/día")
+c2.metric("Energía", f"{res['energia_anio']/1000:,.0f} mil GJ/año")
+c3.metric("Ingresos", f"{(res['ingreso']+res['ingreso_carbono']+res['ingreso_diesel'])/1e6:,.1f} M USD")
+c4.metric("Costos", f"{res['costo']/1e6:,.1f} M USD")
+
+# --- Badge de viabilidad ---
+ganancia_musd = res["ganancia"] / 1e6
+if res["ganancia"] > 0:
+    badge = f"<span class='badge badge-ok'>VIABLE · +{ganancia_musd:,.1f} M USD/año</span>"
+else:
+    badge = f"<span class='badge badge-no'>NO VIABLE · {ganancia_musd:,.1f} M USD/año</span>"
+st.markdown(badge, unsafe_allow_html=True)
+
+st.caption(
+    f"Incluye bonos de carbono ({res['ingreso_carbono']/1e6:,.2f} M USD) y "
+    f"sustitución de diésel ({res['ingreso_diesel']/1e6:,.2f} M USD, "
+    f"{res['co2_diesel']:,.0f} t CO₂/año desplazadas). "
+    "Las cifras de CO₂ son estimaciones de orden de magnitud."
+)
+
+st.markdown("---")
+
+# ==========================================================================
+# GRÁFICA: GANANCIA VS ESCALA
+# ==========================================================================
+st.markdown("### Ganancia según escala de planta")
+
+escalas = list(range(200, 1601, 100))
+g_lng, g_red = [], []
+for b in escalas:
+    g_lng.append(
+        calcular_ganancia(b, True, precio_lng if es_biolng else 700,
+                           precio_carbono, clientes_diesel)["ganancia"] / 1e6
+    )
+    g_red.append(
+        calcular_ganancia(b, False, tarifa if not es_biolng else 8.0,
+                           precio_carbono, clientes_diesel)["ganancia"] / 1e6
+    )
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=escalas, y=g_lng, mode="lines+markers",
+                         name="Ruta Bio-LNG", line=dict(color="#1B7A4B", width=3)))
+fig.add_trace(go.Scatter(x=escalas, y=g_red, mode="lines+markers",
+                         name="Ruta red Naturgy", line=dict(color="#B23A48", width=3)))
+fig.add_hline(y=0, line_dash="dash", line_color="#666666")
+fig.add_vline(x=biomasa, line_dash="dot", line_color="#0E3A2A",
+              annotation_text="Escala actual")
+fig.update_layout(
+    plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF",
+    font=dict(family="Source Sans 3", color="#1A1A1A"),
+    xaxis_title="Biomasa (t/día)", yaxis_title="Ganancia (M USD/año)",
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+    height=420,
+)
+fig.update_xaxes(gridcolor="#EEEEEE")
+fig.update_yaxes(gridcolor="#EEEEEE")
+st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("---")
+
+# ==========================================================================
+# MAPA DEL CORREDOR DE DISTRIBUCIÓN
+# ==========================================================================
+st.markdown("### Corredor de distribución (ilustrativo)")
+st.caption("Corredor León – Aguascalientes – Guadalajara (~250 km). Rutas ilustrativas, no optimizadas.")
+
+corredor = pd.DataFrame({
+    "ciudad": ["Lagos de Moreno (planta)", "León", "Aguascalientes", "Guadalajara"],
+    "lat": [21.3556, 21.1230, 21.8853, 20.6597],
+    "lon": [-101.9419, -101.6804, -102.2916, -103.3496],
+})
+
+ruta_lineas = pd.DataFrame({
+    "from_lat": [21.3556, 21.3556, 21.3556],
+    "from_lon": [-101.9419, -101.9419, -101.9419],
+    "to_lat": [21.1230, 21.8853, 20.6597],
+    "to_lon": [-101.6804, -102.2916, -103.3496],
+})
+
+capa_puntos = pdk.Layer(
+    "ScatterplotLayer",
+    data=corredor,
+    get_position="[lon, lat]",
+    get_color="[14, 58, 42, 220]",
+    get_radius=6000,
+    pickable=True,
+)
+capa_lineas = pdk.Layer(
+    "LineLayer",
+    data=ruta_lineas,
+    get_source_position="[from_lon, from_lat]",
+    get_target_position="[to_lon, to_lat]",
+    get_color="[178, 58, 72, 200]",
+    get_width=4,
+)
+
+st.pydeck_chart(pdk.Deck(
+    map_style="mapbox://styles/mapbox/light-v9",
+    initial_view_state=pdk.ViewState(latitude=21.2, longitude=-102.0, zoom=7, pitch=0),
+    layers=[capa_lineas, capa_puntos],
+    tooltip={"text": "{ciudad}"},
+))
+
+st.markdown("---")
+st.caption(
+    "Datos regionales: 2,813,595 cabezas porcinas en 5 municipios · 48% de la producción "
+    "nacional de huevo · 2ª cuenca lechera del país (SIAP 2023). "
+    "Fuente operativa: Brimex Energy (primer permiso federal de comercialización de biometano, 2024)."
+)
