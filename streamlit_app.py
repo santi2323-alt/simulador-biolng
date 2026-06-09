@@ -13,9 +13,10 @@ st.set_page_config(
  
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap');
     .stApp { background: #FFFFFF; }
-    * { font-family: 'Inter', Arial, sans-serif !important; }
+    * { font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif !important; }
+    h1, h2 { font-family: 'Source Sans 3', Georgia, serif !important; letter-spacing: -0.5px !important; }
  
     /* PANEL LATERAL — verde oscuro formal */
     section[data-testid="stSidebar"] {
@@ -53,6 +54,15 @@ st.markdown("""
     .footer-note { font-size: 11px; color: #A3B1BC; text-align: center; }
     hr { border-color: #E2E8E5; }
     #MainMenu, footer, header { visibility: hidden; }
+ 
+    /* Ocultar texto roto del botón colapsar y mostrar flecha limpia */
+    [data-testid="collapsedControl"] { display: block !important; background: #0E3A2A !important; border-radius: 0 8px 8px 0; padding: 8px 6px !important; }
+    [data-testid="collapsedControl"] span,
+    [data-testid="collapsedControl"] p { font-size: 0 !important; }
+    [data-testid="collapsedControl"]::after { content: "›"; color: #FFFFFF; font-size: 24px; font-weight: 700; }
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stSidebarCollapseButton"] p { font-size: 0 !important; }
+    [data-testid="stSidebarCollapseButton"]::after { content: "‹"; color: #DDEAE3; font-size: 22px; font-weight: 700; }
 </style>
 """, unsafe_allow_html=True)
  
@@ -125,7 +135,7 @@ with left:
     fig.add_trace(go.Scatter(x=xs, y=gan_red_x, name="Red Naturgy (con feed-in)", line=dict(color=AZUL, width=2, dash='dot')))
     fig.add_hline(y=0, line_color="#C5CFD6", line_width=1)
     fig.add_vline(x=biomasa, line_color=AMBAR, line_width=2, line_dash="dash", annotation_text=f"  {biomasa} t/d", annotation_font_color=AMBAR)
-    fig.update_layout(plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", font=dict(color="#44525E", family="Inter"), height=300, margin=dict(l=10, r=10, t=10, b=10), legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12), xaxis=dict(title="Biomasa (t/día)", gridcolor="#EDF1F4", zeroline=False), yaxis=dict(title="Ganancia (M USD/año)", gridcolor="#EDF1F4", zeroline=False))
+    fig.update_layout(plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", font=dict(color="#44525E", family="Source Sans 3"), height=300, margin=dict(l=10, r=10, t=10, b=10), legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12), xaxis=dict(title="Biomasa (t/día)", gridcolor="#EDF1F4", zeroline=False), yaxis=dict(title="Ganancia (M USD/año)", gridcolor="#EDF1F4", zeroline=False))
     st.plotly_chart(fig, use_container_width=True)
     st.markdown('<div class="section-title">Sustitución de diésel en clientes cercanos</div>', unsafe_allow_html=True)
     d1, d2 = st.columns(2)
