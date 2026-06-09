@@ -1,11 +1,11 @@
-import streamlit as st
+ort streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import pydeck as pdk
-
+ 
 st.set_page_config(page_title="Naturgy · Simulador Bio-LNG Jalisco", page_icon="◆", layout="wide", initial_sidebar_state="expanded")
-
+ 
 # ════════════════════════════════════════════════════════════════════════════
 #  IDENTIDAD VISUAL NATURGY
 #  Azul corporativo Pantone 302C ≈ #00497B  ·  Naranja 144C ≈ #ED8B00
@@ -18,15 +18,29 @@ ROJO = "#C0264A"
 GRIS_TX = "#3C4A57"
 GRIS_SUAVE = "#6B7A88"
 GRIS_BG = "#F4F6F8"
-
+ 
+SVG = {
+    "biomasa": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5-2 7-6 7-11V4l-7 2-7-2v7c0 5 2 9 7 11z"/><path d="M12 22V9"/><path d="M9 12l3-2 3 2"/></svg>',
+    "digestor": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v8c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><circle cx="10" cy="11" r="0.8" fill="{c}"/><circle cx="13" cy="13" r="0.8" fill="{c}"/></svg>',
+    "upgrading": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="4" height="12" rx="1"/><rect x="10" y="4" width="4" height="15" rx="1"/><rect x="16" y="9" width="4" height="10" rx="1"/><path d="M2 19h20"/></svg>',
+    "frio": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3"/><path d="M3 7l18 10M3 7l4 .5M3 7l.5 4M21 17l-4-.5M21 17l-.5-4"/><path d="M21 7L3 17M21 7l-4 .5M21 7l-.5 4M3 17l4-.5M3 17l.5-4"/></svg>',
+    "split": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h6"/><path d="M9 12l5-6h7"/><path d="M9 12l5 6h7"/><circle cx="9" cy="12" r="1.5" fill="{c}"/></svg>',
+    "camion": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h11v9H1z"/><path d="M12 11h5l4 4v2h-9z"/><circle cx="5.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></svg>',
+    "flama": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 4 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 .5 1.5 1.5 2 2 2 0-2-1-4 1-7z"/></svg>',
+}
+def svgico(name, color):
+    return SVG[name].replace("{c}", color)
+ 
+ 
+ 
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Semi+Condensed:wght@600;700;800&display=swap');
-
+    @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Narrow:wght@600;700&display=swap');
+ 
     .stApp {{ background: #FFFFFF; }}
-    * {{ font-family: 'Barlow', 'Helvetica Neue', Arial, sans-serif !important; }}
-    h1, h2, h3 {{ font-family: 'Barlow Semi Condensed', sans-serif !important; }}
-
+    * {{ font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif !important; }}
+    h1, h2, h3 {{ font-family: 'Archivo', sans-serif !important; }}
+ 
     /* ── BARRA SUPERIOR estilo header de naturgy.com ── */
     .ng-topbar {{
         background: {AZUL}; margin: -1.5rem -4rem 0 -4rem; padding: 16px 48px;
@@ -35,70 +49,70 @@ st.markdown(f"""
     .ng-logo {{ display: flex; align-items: center; gap: 10px; }}
     .ng-logo-mark {{ width: 30px; height: 30px; background: {NARANJA};
         border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: inline-block; }}
-    .ng-logo-text {{ color: #FFFFFF !important; font-family: 'Barlow Semi Condensed' !important;
+    .ng-logo-text {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
         font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }}
     .ng-nav {{ color: #B8D4E8 !important; font-size: 13px; font-weight: 500; }}
-
+ 
     /* ── HERO ── */
     .ng-hero {{ background: {AZUL}; margin: 0 -4rem 24px -4rem; padding: 34px 48px 40px;
         color: #fff; }}
     .ng-eyebrow {{ color: {NARANJA} !important; font-size: 12px; font-weight: 700;
         letter-spacing: 2px; text-transform: uppercase; }}
-    .ng-title {{ color: #FFFFFF !important; font-family: 'Barlow Semi Condensed' !important;
+    .ng-title {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
         font-size: 40px; font-weight: 800; line-height: 1.05; margin: 8px 0 6px; letter-spacing: -0.5px; }}
     .ng-sub {{ color: #B8D4E8 !important; font-size: 15px; font-weight: 400; }}
-
+ 
     section[data-testid="stSidebar"] {{ background: {AZUL}; border: none; min-width: 320px; }}
     section[data-testid="stSidebar"] * {{ color: #DCEAF4 !important; }}
-    section[data-testid="stSidebar"] h3 {{ color: #FFFFFF !important; font-family: 'Barlow Semi Condensed' !important; }}
+    section[data-testid="stSidebar"] h3 {{ color: #FFFFFF !important; font-family: 'Archivo' !important; }}
     section[data-testid="stSidebar"] hr {{ border-color: #1A5C87; }}
     .side-eyebrow {{ color: {NARANJA} !important; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }}
-
+ 
     [data-testid="collapsedControl"] {{ display: block !important; background: {AZUL} !important; border-radius: 0 8px 8px 0; padding: 8px 6px !important; }}
     [data-testid="collapsedControl"] span, [data-testid="collapsedControl"] p {{ font-size: 0 !important; }}
     [data-testid="collapsedControl"]::after {{ content: "›"; color: #FFFFFF; font-size: 24px; font-weight: 700; }}
     [data-testid="stSidebarCollapseButton"] span, [data-testid="stSidebarCollapseButton"] p {{ font-size: 0 !important; }}
     [data-testid="stSidebarCollapseButton"]::after {{ content: "‹"; color: #DCEAF4; font-size: 22px; font-weight: 700; }}
-
+ 
     h1, h2, h3, h4 {{ color: {AZUL} !important; }}
     p, label, span, div {{ color: {GRIS_TX}; }}
-
+ 
     .ng-section {{ display: flex; align-items: baseline; gap: 12px; margin: 22px 0 14px; }}
     .ng-section-bar {{ width: 4px; height: 22px; background: {NARANJA}; border-radius: 2px; }}
-    .ng-section-title {{ font-family: 'Barlow Semi Condensed' !important; font-size: 19px; font-weight: 700; color: {AZUL} !important; }}
+    .ng-section-title {{ font-family: 'Archivo' !important; font-size: 19px; font-weight: 700; color: {AZUL} !important; }}
     .ng-section-ref {{ font-size: 11px; color: {GRIS_SUAVE} !important; letter-spacing: 1px; margin-left: auto; }}
-
+ 
     .card {{ background: #FFFFFF; border: 1px solid #E3E9 EE; border: 1px solid #E3E9EE; border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,73,123,0.06); }}
     .kpi-label {{ font-size: 11px; color: {GRIS_SUAVE}; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; }}
-    .kpi-value {{ font-family: 'Barlow Semi Condensed' !important; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-top: 4px; }}
+    .kpi-value {{ font-family: 'Archivo' !important; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-top: 4px; }}
     .kpi-unit {{ font-size: 13px; color: {GRIS_SUAVE}; font-weight: 500; }}
-
+ 
     .badge-ok {{ background: #EDF7E6; border: 1px solid {VERDE}; color: #3D7A12; border-radius: 8px; padding: 13px; text-align: center; font-weight: 700; font-size: 14px; }}
     .badge-no {{ background: #FBECEF; border: 1px solid {ROJO}; color: #A01E3C; border-radius: 8px; padding: 13px; text-align: center; font-weight: 700; font-size: 14px; }}
-
+ 
     .ng-status {{ background: {AZUL}; border-radius: 10px; padding: 12px 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }}
     .ng-status span {{ color: #B8D4E8 !important; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }}
     .ng-status .on {{ color: {NARANJA} !important; }}
     @keyframes pulse {{ 0%,100% {{ opacity: 1; }} 50% {{ opacity: 0.45; }} }}
     .ng-status .on {{ animation: pulse 2s ease-in-out infinite; }}
-
+ 
     .footer-note {{ font-size: 11px; color: #9AA8B4; text-align: center; }}
     hr {{ border-color: #E3E9EE; }}
     #MainMenu, footer, header {{ visibility: hidden; }}
-
+ 
     @keyframes flowdot {{ 0% {{ left: 0%; opacity: 0; }} 12% {{ opacity: 1; }} 88% {{ opacity: 1; }} 100% {{ left: 100%; opacity: 0; }} }}
     .proc-wrap {{ display: flex; align-items: stretch; margin: 4px 0 8px; border: 1px solid #E3E9EE; border-radius: 10px; overflow: hidden; background: #FAFCFD; }}
     .proc-step {{ flex: 1; padding: 16px 8px; text-align: center; border-right: 1px solid #EDF1F4; }}
     .proc-step:last-child {{ border-right: none; }}
     .proc-ico {{ font-size: 26px; line-height: 1; }}
     .proc-name {{ font-size: 10px; font-weight: 700; color: {AZUL}; letter-spacing: 0.3px; margin-top: 7px; text-transform: uppercase; }}
-    .proc-val {{ font-family: 'Barlow Semi Condensed' !important; font-size: 14px; font-weight: 700; margin-top: 2px; }}
+    .proc-val {{ font-family: 'Archivo' !important; font-size: 14px; font-weight: 700; margin-top: 2px; }}
     .proc-conn {{ width: 40px; display: flex; align-items: center; }}
     .proc-line {{ width: 100%; height: 2px; background: #DDE7EE; position: relative; overflow: hidden; }}
     .proc-line::after {{ content: ""; position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; animation: flowdot 2.2s linear infinite; }}
 </style>
 """, unsafe_allow_html=True)
-
+ 
 # ── BARRA SUPERIOR + HERO estilo naturgy.com ─────────────────────────────────
 st.markdown(f"""
 <div class="ng-topbar">
@@ -111,7 +125,7 @@ st.markdown(f"""
     <div class="ng-sub">Lagos de Moreno, Región Altos Norte de Jalisco · Referente operativo: Brimex Energy · DS3001B Tec de Monterrey 2026</div>
 </div>
 """, unsafe_allow_html=True)
-
+ 
 # ── SIDEBAR ──────────────────────────────────────────────────────────────────
 st.sidebar.markdown('<div class="side-eyebrow">Parámetros de operación</div>', unsafe_allow_html=True)
 st.sidebar.markdown("### Ajusta los escenarios")
@@ -128,7 +142,7 @@ precio_carbono = st.sidebar.slider("Crédito de carbono (USD/ton CO₂eq)", 0, 2
 st.sidebar.markdown("<hr>", unsafe_allow_html=True)
 st.sidebar.markdown("**Sustitución de diésel**")
 clientes_diesel = st.sidebar.slider("Clientes activos que sustituyen diésel", 0, 5, 3, 1, help="AKRON, Lala, 2 CEDIS Walmart, Bimbo")
-
+ 
 # ── CÁLCULOS ─────────────────────────────────────────────────────────────────
 factor = biomasa / 800.0
 biometano_m3d = biomasa * 27.0
@@ -148,7 +162,7 @@ es_biolng = ruta.startswith("Bio-LNG")
 ganancia_actual = ganancia_lng if es_biolng else ganancia_red
 viable = ganancia_actual >= 0
 signo = "+" if ganancia_actual >= 0 else ""
-
+ 
 # ── BARRA DE ESTADO ──────────────────────────────────────────────────────────
 estado = "OPERANDO · RUTA BIO-LNG" if es_biolng else "OPERANDO · RUTA RED"
 st.markdown(f'''<div class="ng-status">
@@ -157,26 +171,27 @@ st.markdown(f'''<div class="ng-status">
     <span>REFERENTE BRIMEX 800 t/d</span>
     <span>{"ESTADO: VIABLE" if viable else "ESTADO: NO VIABLE"}</span>
 </div>''', unsafe_allow_html=True)
-
+ 
 # ── TIRA DE PROCESO ──────────────────────────────────────────────────────────
 rc = VERDE if es_biolng else AZUL_CLARO
 destino = "BIO-LNG · CAMIÓN" if es_biolng else "BIOMETANO · RED"
-dico = "🚛" if es_biolng else "🔥"
+ico4 = svgico("frio", rc) if es_biolng else svgico("split", rc)
+ico5 = svgico("camion", NARANJA) if es_biolng else svgico("flama", NARANJA)
 st.markdown(f"""
 <div class="proc-wrap">
-    <div class="proc-step"><div class="proc-ico">🌾</div><div class="proc-name">Biomasa</div><div class="proc-val" style="color:{NARANJA};">{biomasa:.0f} t/d</div></div>
-    <div class="proc-conn"><div class="proc-line" style="--c:{rc};"></div></div>
-    <div class="proc-step"><div class="proc-ico">⚗️</div><div class="proc-name">Biodigestor</div><div class="proc-val" style="color:{rc};">{biomasa*0.9:.0f} t</div></div>
+    <div class="proc-step"><div class="proc-ico" style="color:{NARANJA};">{svgico("biomasa", NARANJA)}</div><div class="proc-name">Biomasa</div><div class="proc-val" style="color:{NARANJA};">{biomasa:.0f} t/d</div></div>
     <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico">🏭</div><div class="proc-name">Upgrading</div><div class="proc-val" style="color:{rc};">{biometano_m3d:,.0f} m³/d</div></div>
+    <div class="proc-step"><div class="proc-ico" style="color:{rc};">{svgico("digestor", rc)}</div><div class="proc-name">Biodigestor</div><div class="proc-val" style="color:{rc};">{biomasa*0.9:.0f} t</div></div>
     <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico">{"❄️" if es_biolng else "🔀"}</div><div class="proc-name">{"Licuefacción" if es_biolng else "Bifurcación"}</div><div class="proc-val" style="color:{rc};">{biolng_m3d:,.0f} m³/d</div></div>
+    <div class="proc-step"><div class="proc-ico" style="color:{rc};">{svgico("upgrading", rc)}</div><div class="proc-name">Upgrading</div><div class="proc-val" style="color:{rc};">{biometano_m3d:,.0f} m³/d</div></div>
     <div class="proc-conn"><div class="proc-line"></div></div>
-    <div class="proc-step"><div class="proc-ico">{dico}</div><div class="proc-name">{destino}</div><div class="proc-val" style="color:{NARANJA};">{clientes_diesel} clientes</div></div>
+    <div class="proc-step"><div class="proc-ico" style="color:{rc};">{ico4}</div><div class="proc-name">{"Licuefacción" if es_biolng else "Bifurcación"}</div><div class="proc-val" style="color:{rc};">{biolng_m3d:,.0f} m³/d</div></div>
+    <div class="proc-conn"><div class="proc-line"></div></div>
+    <div class="proc-step"><div class="proc-ico" style="color:{NARANJA};">{ico5}</div><div class="proc-name">{destino}</div><div class="proc-val" style="color:{NARANJA};">{clientes_diesel} clientes</div></div>
 </div>
-<style>.proc-line::after {{ background: {rc}; }}</style>
+<style>.proc-line::after {{ background: {rc}; }} .proc-ico svg {{ vertical-align: middle; }}</style>
 """, unsafe_allow_html=True)
-
+ 
 # ── KPIs ─────────────────────────────────────────────────────────────────────
 st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Indicadores clave</div><div class="ng-section-ref">FIG. 1 · TIEMPO REAL</div></div>', unsafe_allow_html=True)
 def kpi(col, label, value, unit, color):
@@ -186,28 +201,28 @@ kpi(m1, "Ganancia anual estimada", f"{signo}{ganancia_actual:,.1f}", "M USD/año
 kpi(m2, "Biometano producido", f"{biometano_m3d:,.0f}", "m³/día", AZUL)
 kpi(m3, "Bio-LNG generado", f"{biolng_m3d:,.0f}", "m³/día", AZUL_CLARO)
 kpi(m4, "CO₂ evitado", f"{co2_evitado_ton:,.0f}", "ton/año", NARANJA)
-
+ 
 # ── GAUGES ───────────────────────────────────────────────────────────────────
 def gauge(value, title, vmin, vmax, color, ref=None):
     ind = dict(mode="gauge+number" + ("+delta" if ref is not None else ""), value=value,
-        number={'font': {'size': 24, 'color': AZUL, 'family': 'Barlow Semi Condensed'}},
-        title={'text': title, 'font': {'size': 11, 'color': GRIS_SUAVE, 'family': 'Barlow'}},
+        number={'font': {'size': 24, 'color': AZUL, 'family': 'Archivo'}},
+        title={'text': title, 'font': {'size': 11, 'color': GRIS_SUAVE, 'family': 'Archivo'}},
         gauge={'axis': {'range': [vmin, vmax], 'tickcolor': '#C5D2DC', 'tickfont': {'size': 9, 'color': '#9AA8B4'}},
             'bar': {'color': color, 'thickness': 0.30}, 'bgcolor': '#F1F5F8', 'borderwidth': 1, 'bordercolor': '#E3E9EE',
             'steps': [{'range': [vmin, vmin+(vmax-vmin)*0.5], 'color': '#EAF1F6'}, {'range': [vmin+(vmax-vmin)*0.5, vmax], 'color': '#DFEAF2'}],
             'threshold': {'line': {'color': AZUL, 'width': 2}, 'thickness': 0.85, 'value': value}})
     if ref is not None:
-        ind['delta'] = {'reference': ref, 'increasing': {'color': VERDE}, 'decreasing': {'color': ROJO}, 'font': {'size': 12, 'family': 'Barlow'}}
+        ind['delta'] = {'reference': ref, 'increasing': {'color': VERDE}, 'decreasing': {'color': ROJO}, 'font': {'size': 12, 'family': 'Archivo'}}
     fig = go.Figure(go.Indicator(**ind))
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=42, b=8), paper_bgcolor='#FFFFFF', transition={'duration': 500, 'easing': 'cubic-in-out'})
     return fig
-
+ 
 g1, g2, g3, g4 = st.columns(4)
 g1.plotly_chart(gauge(biomasa, "BIOMASA t/día", 200, 1600, NARANJA, ref=800), use_container_width=True, key="g1")
 g2.plotly_chart(gauge(biometano_m3d, "BIOMETANO m³/día", 0, 43200, AZUL, ref=21600), use_container_width=True, key="g2")
 g3.plotly_chart(gauge(biolng_m3d, "BIO-LNG m³/día", 0, 14256, AZUL_CLARO, ref=7128), use_container_width=True, key="g3")
 g4.plotly_chart(gauge(ganancia_actual, "GANANCIA M USD/año", -8, 4, VERDE if viable else ROJO, ref=0), use_container_width=True, key="g4")
-
+ 
 # ── GRÁFICA + MAPA ───────────────────────────────────────────────────────────
 left, right = st.columns([1.3, 1])
 with left:
@@ -226,7 +241,7 @@ with left:
     d1, d2 = st.columns(2)
     kpi(d1, "Diésel sustituido", f"{diesel_sustituido/1000:,.0f}", "mil L/año", NARANJA)
     kpi(d2, "CO₂ evitado (sustitución)", f"{co2_diesel:,.0f}", "ton/año", VERDE)
-
+ 
 with right:
     st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Corredor de distribución</div><div class="ng-section-ref">FIG. 4 · JALISCO</div></div>', unsafe_allow_html=True)
     PLANTA = {"lat": 21.3795, "lon": -101.9180}
@@ -248,6 +263,7 @@ with right:
     else:
         st.markdown(f'<div class="badge-no">NO VIABLE · ajusta precio o feed-in</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="card" style="margin-top:10px;"><div class="kpi-label">Ruta seleccionada</div><div style="color:{AZUL}; font-weight:700; margin-top:4px; font-size:15px;">{ruta}</div><div style="color:{GRIS_SUAVE}; font-size:12px; margin-top:6px; line-height:1.5;">{"El Bio-LNG viaja en camión hasta 198 km y sustituye diésel en industria y centros de distribución." if es_biolng else "El biometano se inyecta a la red local de Naturgy en zona Bajío Sur."}</div></div>', unsafe_allow_html=True)
-
+ 
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<p class="footer-note">Modelo basado en referente operativo Brimex Energy (800 t/d, 21,600 m³/d) · IEA 2025 · EIA 2025 · Gildea et al. 2025 · Capra et al. 2019 · SIAP 2023 · Clientes: AKRON, Grupo Lala, Walmart CEDIS, Grupo Bimbo</p>', unsafe_allow_html=True)
+
