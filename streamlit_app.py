@@ -3,57 +3,81 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import pydeck as pdk
- 
+
 st.set_page_config(
     page_title="Simulador Bio-LNG · Naturgy Jalisco",
     page_icon="●",
     layout="wide",
     initial_sidebar_state="expanded",
 )
- 
+
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap');
-    .stApp { background: #FFFFFF; }
-    * { font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif !important; }
-    h1, h2 { font-family: 'Source Sans 3', Georgia, serif !important; letter-spacing: -0.5px !important; }
- 
+
+    .stApp { 
+        background: #FFFFFF; 
+    }
+
+    * { 
+        font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif !important; 
+    }
+
+    h1, h2 { 
+        font-family: 'Source Sans 3', Georgia, serif !important; 
+        letter-spacing: -0.5px !important; 
+    }
+
     section[data-testid="stSidebar"] {
-        background: #0E3A2A;
+        background: #8A3F00;
         border-right: none;
         min-width: 330px;
     }
 
-    section[data-testid="stSidebar"] * { color: #DDEAE3 !important; }
-    section[data-testid="stSidebar"] h3 { color: #FFFFFF !important; }
+    section[data-testid="stSidebar"] * { 
+        color: #FFF3E6 !important; 
+    }
+
+    section[data-testid="stSidebar"] h3 { 
+        color: #FFFFFF !important; 
+    }
 
     section[data-testid="stSidebar"] .eyebrow-side {
-        color: #6FD79E !important;
+        color: #FFB86B !important;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.6px;
         text-transform: none;
     }
 
-    section[data-testid="stSidebar"] hr { border-color: #1C5640; }
- 
+    section[data-testid="stSidebar"] hr { 
+        border-color: #B85C12; 
+    }
+
     [data-testid="collapsedControl"] {
         display: block !important;
-        background: #0E3A2A !important;
+        background: #8A3F00 !important;
         color: #FFFFFF !important;
         border-radius: 0 8px 8px 0;
     }
 
-    [data-testid="collapsedControl"] svg { color: #FFFFFF !important; }
- 
-    h1, h2, h3, h4 { color: #15241D !important; }
-    p, label, span, div { color: #44525E; }
+    [data-testid="collapsedControl"] svg { 
+        color: #FFFFFF !important; 
+    }
+
+    h1, h2, h3, h4 { 
+        color: #15241D !important; 
+    }
+
+    p, label, span, div { 
+        color: #44525E; 
+    }
 
     .eyebrow {
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.6px;
-        color: #0E3A2A;
+        color: #C96A13;
         text-transform: none;
     }
 
@@ -89,9 +113,9 @@ st.markdown("""
     }
 
     .badge-ok {
-        background: #E6F4EC;
-        border: 1px solid #1C8C5A;
-        color: #0E5E3A;
+        background: #FFF1E2;
+        border: 1px solid #F28C28;
+        color: #8A3F00;
         border-radius: 8px;
         padding: 12px;
         text-align: center;
@@ -125,12 +149,17 @@ st.markdown("""
         text-align: center;
     }
 
-    hr { border-color: #E2E8E5; }
-    #MainMenu, footer, header { visibility: hidden; }
- 
+    hr { 
+        border-color: #E2E8E5; 
+    }
+
+    #MainMenu, footer, header { 
+        visibility: hidden; 
+    }
+
     [data-testid="collapsedControl"] {
         display: block !important;
-        background: #0E3A2A !important;
+        background: #8A3F00 !important;
         border-radius: 0 8px 8px 0;
         padding: 8px 6px !important;
     }
@@ -154,24 +183,27 @@ st.markdown("""
 
     [data-testid="stSidebarCollapseButton"]::after {
         content: "‹";
-        color: #DDEAE3;
+        color: #FFF3E6;
         font-size: 22px;
         font-weight: 700;
     }
 </style>
 """, unsafe_allow_html=True)
- 
-VERDE = "#1C8C5A"
-VERDE_OSC = "#0E5E3A"
+
+NARANJA = "#F28C28"
+NARANJA_OSC = "#C96A13"
 AZUL = "#2E7DB8"
 AMBAR = "#C98A2B"
 ROJO = "#C0264A"
 GRIS = "#7E8C86"
- 
+
 c1, c2 = st.columns([3, 1])
 
 with c1:
-    st.markdown('<div class="eyebrow">Naturgy México · Simulación de escenarios</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="eyebrow">Naturgy México · Simulación de escenarios</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown("## Cadena de valor del Bio-LNG")
     st.markdown(
         '<p style="color:#7E8C86; margin-top:-10px;">'
@@ -188,13 +220,18 @@ with c2:
         '</div>',
         unsafe_allow_html=True,
     )
- 
+
 st.markdown("<hr>", unsafe_allow_html=True)
- 
-st.sidebar.markdown('<div class="eyebrow-side">Parámetros de operación</div>', unsafe_allow_html=True)
-st.sidebar.markdown("### Ajusta los escenarios")
+
 st.sidebar.markdown(
-    '<p style="color:#A8C5B8; font-size:12px; margin-top:-8px;">'
+    '<div class="eyebrow-side">Parámetros de operación</div>',
+    unsafe_allow_html=True,
+)
+
+st.sidebar.markdown("### Ajusta los escenarios")
+
+st.sidebar.markdown(
+    '<p style="color:#FFE0BF; font-size:12px; margin-top:-8px;">'
     'Modifica los valores para simular distintos escenarios en tiempo real.'
     '</p>',
     unsafe_allow_html=True,
@@ -258,7 +295,7 @@ clientes_diesel = st.sidebar.slider(
     8,
     1,
 )
- 
+
 factor = biomasa / 800.0
 biometano_m3d = biomasa * 27.0
 digestato = biomasa * 0.1
@@ -283,7 +320,7 @@ es_biolng = ruta.startswith("Bio-LNG")
 ganancia_actual = ganancia_lng if es_biolng else ganancia_red
 viable = ganancia_actual >= 0
 signo = "+" if ganancia_actual >= 0 else ""
- 
+
 def kpi(col, label, value, unit, color):
     col.markdown(
         f"""
@@ -296,14 +333,41 @@ def kpi(col, label, value, unit, color):
         """,
         unsafe_allow_html=True,
     )
- 
+
 m1, m2, m3, m4 = st.columns(4)
 
-kpi(m1, "Ganancia anual estimada", f"{signo}{ganancia_actual:,.1f}", "M USD/año", VERDE if viable else ROJO)
-kpi(m2, "Biometano producido", f"{biometano_m3d:,.0f}", "m³/día", VERDE_OSC)
-kpi(m3, "Bio-LNG generado", f"{biolng_m3d:,.0f}", "m³/día", AZUL)
-kpi(m4, "CO₂ evitado", f"{co2_evitado_ton:,.0f}", "ton/año", AMBAR)
- 
+kpi(
+    m1,
+    "Ganancia anual estimada",
+    f"{signo}{ganancia_actual:,.1f}",
+    "M USD/año",
+    NARANJA if viable else ROJO,
+)
+
+kpi(
+    m2,
+    "Biometano producido",
+    f"{biometano_m3d:,.0f}",
+    "m³/día",
+    NARANJA_OSC,
+)
+
+kpi(
+    m3,
+    "Bio-LNG generado",
+    f"{biolng_m3d:,.0f}",
+    "m³/día",
+    AZUL,
+)
+
+kpi(
+    m4,
+    "CO₂ evitado",
+    f"{co2_evitado_ton:,.0f}",
+    "ton/año",
+    AMBAR,
+)
+
 left, right = st.columns([1.3, 1])
 
 with left:
@@ -324,9 +388,9 @@ with left:
             x=xs,
             y=gan_lng_x,
             name="Bio-LNG",
-            line=dict(color=VERDE, width=3),
+            line=dict(color=NARANJA, width=3),
             fill="tozeroy",
-            fillcolor="rgba(28,140,90,0.08)",
+            fillcolor="rgba(242,140,40,0.10)",
         )
     )
 
@@ -339,7 +403,11 @@ with left:
         )
     )
 
-    fig.add_hline(y=0, line_color="#C5CFD6", line_width=1)
+    fig.add_hline(
+        y=0,
+        line_color="#C5CFD6",
+        line_width=1,
+    )
 
     fig.add_vline(
         x=biomasa,
@@ -357,8 +425,16 @@ with left:
         height=300,
         margin=dict(l=10, r=10, t=10, b=10),
         legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12),
-        xaxis=dict(title="Biomasa (t/día)", gridcolor="#EDF1F4", zeroline=False),
-        yaxis=dict(title="Ganancia (M USD/año)", gridcolor="#EDF1F4", zeroline=False),
+        xaxis=dict(
+            title="Biomasa (t/día)",
+            gridcolor="#EDF1F4",
+            zeroline=False,
+        ),
+        yaxis=dict(
+            title="Ganancia (M USD/año)",
+            gridcolor="#EDF1F4",
+            zeroline=False,
+        ),
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -370,9 +446,22 @@ with left:
 
     d1, d2 = st.columns(2)
 
-    kpi(d1, "Diésel sustituido", f"{diesel_sustituido/1000:,.0f}", "mil L/año", AMBAR)
-    kpi(d2, "CO₂ evitado por sustitución", f"{co2_diesel:,.0f}", "ton/año", VERDE)
- 
+    kpi(
+        d1,
+        "Diésel sustituido",
+        f"{diesel_sustituido/1000:,.0f}",
+        "mil L/año",
+        AMBAR,
+    )
+
+    kpi(
+        d2,
+        "CO₂ evitado por sustitución",
+        f"{co2_diesel:,.0f}",
+        "ton/año",
+        NARANJA,
+    )
+
 with right:
     st.markdown(
         '<div class="section-title">Corredor de distribución · Jalisco</div>',
@@ -380,16 +469,47 @@ with right:
     )
 
     ciudades = pd.DataFrame([
-        {"name": "Lagos de Moreno", "lat": 21.3571, "lon": -101.9282},
-        {"name": "León", "lat": 21.1250, "lon": -101.6860},
-        {"name": "Aguascalientes", "lat": 21.8853, "lon": -102.2916},
-        {"name": "Guadalajara", "lat": 20.6597, "lon": -103.3496},
+        {
+            "name": "Lagos de Moreno",
+            "lat": 21.3571,
+            "lon": -101.9282,
+        },
+        {
+            "name": "León",
+            "lat": 21.1250,
+            "lon": -101.6860,
+        },
+        {
+            "name": "Aguascalientes",
+            "lat": 21.8853,
+            "lon": -102.2916,
+        },
+        {
+            "name": "Guadalajara",
+            "lat": 20.6597,
+            "lon": -103.3496,
+        },
     ])
 
     rutas = pd.DataFrame([
-        {"fl": 21.3571, "fo": -101.9282, "tl": 21.1250, "to": -101.6860},
-        {"fl": 21.1250, "fo": -101.6860, "tl": 21.8853, "to": -102.2916},
-        {"fl": 21.8853, "fo": -102.2916, "tl": 20.6597, "to": -103.3496},
+        {
+            "fl": 21.3571,
+            "fo": -101.9282,
+            "tl": 21.1250,
+            "to": -101.6860,
+        },
+        {
+            "fl": 21.1250,
+            "fo": -101.6860,
+            "tl": 21.8853,
+            "to": -102.2916,
+        },
+        {
+            "fl": 21.8853,
+            "fo": -102.2916,
+            "tl": 20.6597,
+            "to": -103.3496,
+        },
     ])
 
     layer_lines = pdk.Layer(
@@ -397,7 +517,7 @@ with right:
         rutas,
         get_source_position=["fo", "fl"],
         get_target_position=["to", "tl"],
-        get_color=[28, 140, 90, 200],
+        get_color=[242, 140, 40, 200],
         get_width=4,
     )
 
@@ -405,7 +525,7 @@ with right:
         "ScatterplotLayer",
         ciudades,
         get_position=["lon", "lat"],
-        get_color=[14, 94, 58, 220],
+        get_color=[201, 106, 19, 220],
         get_radius=9000,
         pickable=True,
     )
@@ -456,7 +576,7 @@ with right:
         """,
         unsafe_allow_html=True,
     )
- 
+
 st.markdown("<hr>", unsafe_allow_html=True)
 
 st.markdown(
