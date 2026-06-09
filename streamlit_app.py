@@ -3,14 +3,14 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import pydeck as pdk
-
+ 
 st.set_page_config(
     page_title="Simulador Bio-LNG · Naturgy Jalisco",
     page_icon="●",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
+ 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap');
@@ -18,30 +18,30 @@ st.markdown("""
     .stApp { background: #FFFFFF; }
     * { font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif !important; }
     h1, h2 { font-family: 'Source Sans 3', Georgia, serif !important; letter-spacing: -0.5px !important; }
-
+ 
     section[data-testid="stSidebar"] { background: #0E3A2A; border-right: none; min-width: 330px; }
     section[data-testid="stSidebar"] * { color: #DDEAE3 !important; }
     section[data-testid="stSidebar"] h3 { color: #FFFFFF !important; }
     section[data-testid="stSidebar"] .eyebrow-side { color: #6FD79E !important; font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; }
     section[data-testid="stSidebar"] hr { border-color: #1C5640; }
-
+ 
     [data-testid="collapsedControl"] { display: block !important; background: #0E3A2A !important; border-radius: 0 8px 8px 0; padding: 8px 6px !important; }
     [data-testid="collapsedControl"] span, [data-testid="collapsedControl"] p { font-size: 0 !important; }
     [data-testid="collapsedControl"]::after { content: "›"; color: #FFFFFF; font-size: 24px; font-weight: 700; }
     [data-testid="stSidebarCollapseButton"] span, [data-testid="stSidebarCollapseButton"] p { font-size: 0 !important; }
     [data-testid="stSidebarCollapseButton"]::after { content: "‹"; color: #DDEAE3; font-size: 22px; font-weight: 700; }
-
+ 
     h1, h2, h3, h4 { color: #15241D !important; }
     p, label, span, div { color: #44525E; }
     .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: #0E3A2A; text-transform: uppercase; }
-
+ 
     /* Tarjetas estilo panel de instrumentos */
     .card { background: #FFFFFF; border: 1px solid #E2E8E5; border-radius: 6px; padding: 16px 18px; margin-bottom: 10px; }
     .panel-tech { background: #0F1C18; border: 1px solid #1C5640; border-radius: 6px; padding: 4px; }
     .kpi-label { font-size: 10px; color: #7E8C86; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; font-family: 'JetBrains Mono', monospace !important; }
     .kpi-value { font-size: 30px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin-top: 4px; font-family: 'JetBrains Mono', monospace !important; }
     .kpi-unit { font-size: 12px; color: #7E8C86; font-weight: 500; }
-
+ 
     .badge-ok { background: #E6F4EC; border: 1px solid #1C8C5A; color: #0E5E3A; border-radius: 6px; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; font-family: 'JetBrains Mono', monospace !important; }
     .badge-no { background: #FBECEF; border: 1px solid #C0264A; color: #A01E3C; border-radius: 6px; padding: 12px; text-align: center; font-weight: 700; font-size: 14px; font-family: 'JetBrains Mono', monospace !important; }
     .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #15241D; text-transform: uppercase; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace !important; }
@@ -52,18 +52,18 @@ st.markdown("""
     #MainMenu, footer, header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
-
+ 
 VERDE = "#1C8C5A"; VERDE_OSC = "#0E5E3A"; AZUL = "#2E7DB8"
 AMBAR = "#C98A2B"; ROJO = "#C0264A"; GRIS = "#7E8C86"
-
+ 
 c1, c2 = st.columns([3, 1])
 with c1:
     st.markdown('<div class="eyebrow">Naturgy México · Panel de Simulación</div>', unsafe_allow_html=True)
     st.markdown("## Cadena de Valor del Bio-LNG")
     st.markdown('<p style="color:#7E8C86; margin-top:-10px;">Lagos de Moreno, Región Altos Norte de Jalisco · Referente operativo: Brimex Energy</p>', unsafe_allow_html=True)
 with c2:
-    st.markdown('<div style="text-align:right; padding-top:18px;"><div class="eyebrow">DS3001B</div><span style="color:#7E8C86; font-size:12px;">Tecnológico de Monterrey · 2026</span></div>', unsafe_allow_html=True)
-
+    st.markdown('<div style="text-align:right; padding-top:22px;"><div style="display:inline-block; border:1.5px solid #0E3A2A; border-radius:6px; padding:6px 14px;"><span style="color:#0E3A2A; font-weight:700; font-size:13px; letter-spacing:0.5px;">DS3001B</span><br><span style="color:#7E8C86; font-size:10px;">Tec de Monterrey · 2026</span></div></div>', unsafe_allow_html=True)
+ 
 # Sidebar
 st.sidebar.markdown('<div class="eyebrow-side">Parámetros de operación</div>', unsafe_allow_html=True)
 st.sidebar.markdown("### Ajusta los escenarios")
@@ -79,8 +79,8 @@ feed_in = st.sidebar.slider("Feed-in tariff red (USD/GJ)", 0.0, 12.0, 0.0, 0.5, 
 precio_carbono = st.sidebar.slider("Crédito de carbono (USD/ton CO₂eq)", 0, 25, 0, 1)
 st.sidebar.markdown("<hr>", unsafe_allow_html=True)
 st.sidebar.markdown("**Sustitución de diésel**")
-clientes_diesel = st.sidebar.slider("Clientes cercanos que sustituyen diésel", 0, 20, 8, 1)
-
+clientes_diesel = st.sidebar.slider("Clientes activos que sustituyen diésel", 0, 5, 3, 1, help="AKRON, Lala, 2 CEDIS Walmart, Bimbo")
+ 
 # Cálculos
 factor = biomasa / 800.0
 biometano_m3d = biomasa * 27.0
@@ -95,13 +95,13 @@ ganancia_lng = (precio_lng - costo_lng) * gj_anual * 0.33 / 1_000_000 + ingreso_
 costo_bm = 15.0
 precio_red = 3.34 + feed_in
 ganancia_red = (precio_red - costo_bm) * gj_anual / 1_000_000 + ingreso_carbono
-diesel_sustituido = biolng_m3d * 365 * 0.58 * (clientes_diesel / 8.0)
+diesel_sustituido = biolng_m3d * 365 * 0.58 * (clientes_diesel / 3.0)
 co2_diesel = diesel_sustituido * 2.68 / 1000
 es_biolng = ruta.startswith("Bio-LNG")
 ganancia_actual = ganancia_lng if es_biolng else ganancia_red
 viable = ganancia_actual >= 0
 signo = "+" if ganancia_actual >= 0 else ""
-
+ 
 # Barra de estado tipo SCADA
 estado = "● OPERANDO · BIO-LNG" if es_biolng else "● OPERANDO · RED"
 st.markdown(f'''<div class="status-bar">
@@ -110,7 +110,7 @@ st.markdown(f'''<div class="status-bar">
     <span class="status-item">REF: BRIMEX 800 t/d</span>
     <span class="status-item">{"STATUS: VIABLE" if viable else "STATUS: NO VIABLE"}</span>
 </div>''', unsafe_allow_html=True)
-
+ 
 # ─── GAUGES TIPO VELOCÍMETRO ─────────────────────────────────────────────────
 def gauge(value, title, vmin, vmax, color, suffix="", steps_color=None):
     fig = go.Figure(go.Indicator(
@@ -134,7 +134,7 @@ def gauge(value, title, vmin, vmax, color, suffix="", steps_color=None):
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=45, b=10),
         paper_bgcolor='#FFFFFF', font={'family': 'JetBrains Mono'})
     return fig
-
+ 
 st.markdown('<div class="section-title">Indicadores de operación en tiempo real</div>', unsafe_allow_html=True)
 g1, g2, g3, g4 = st.columns(4)
 with g1:
@@ -146,7 +146,7 @@ with g3:
 with g4:
     gan_color = VERDE if viable else ROJO
     st.plotly_chart(gauge(ganancia_actual, "GANANCIA M USD/año", -8, 4, gan_color), use_container_width=True, key="g4")
-
+ 
 # ─── GRÁFICA + MAPA ──────────────────────────────────────────────────────────
 left, right = st.columns([1.3, 1])
 with left:
@@ -165,28 +165,39 @@ with left:
     d1, d2 = st.columns(2)
     d1.markdown(f'<div class="card"><div class="kpi-label">DIÉSEL SUSTITUIDO</div><div class="kpi-value" style="color:{AMBAR};">{diesel_sustituido/1000:,.0f} <span class="kpi-unit">mil L/año</span></div></div>', unsafe_allow_html=True)
     d2.markdown(f'<div class="card"><div class="kpi-label">CO₂ EVITADO (SUST.)</div><div class="kpi-value" style="color:{VERDE};">{co2_diesel:,.0f} <span class="kpi-unit">ton/año</span></div></div>', unsafe_allow_html=True)
-
+ 
 with right:
     st.markdown('<div class="section-title">Corredor de distribución · Jalisco</div>', unsafe_allow_html=True)
-    ciudades = pd.DataFrame([
-        {"name": "Lagos de Moreno", "lat": 21.3571, "lon": -101.9282},
-        {"name": "León", "lat": 21.1250, "lon": -101.6860},
-        {"name": "Aguascalientes", "lat": 21.8853, "lon": -102.2916},
-        {"name": "Guadalajara", "lat": 20.6597, "lon": -103.3496},
+    # PLANTA (origen) y 5 CLIENTES REALES con direcciones verificadas
+    PLANTA = {"lat": 21.3795, "lon": -101.9180}  # Lagos de Moreno (zona industrial Conalep)
+    clientes = pd.DataFrame([
+        {"name": "AKRON · Lagos de Moreno", "lat": 21.3850, "lon": -101.9050, "km": 7, "tipo": "Industria"},
+        {"name": "Grupo Lala · Aguascalientes", "lat": 21.8550, "lon": -102.2960, "km": 82, "tipo": "Industria láctea"},
+        {"name": "Walmart CEDIS · Silao Bajío", "lat": 20.9480, "lon": -101.4280, "km": 92, "tipo": "Centro distribución"},
+        {"name": "Walmart CEDIS · Tlajomulco GDL", "lat": 20.4700, "lon": -103.4450, "km": 197, "tipo": "Centro distribución"},
+        {"name": "Grupo Bimbo · Zapopan GDL", "lat": 20.7060, "lon": -103.4530, "km": 198, "tipo": "Industria alimentaria"},
     ])
+    # Punto de planta
+    planta_df = pd.DataFrame([{"name": "PLANTA Bio-LNG · Lagos de Moreno", "lat": PLANTA["lat"], "lon": PLANTA["lon"]}])
+    # Rutas desde planta a cada cliente
     rutas = pd.DataFrame([
-        {"fl": 21.3571, "fo": -101.9282, "tl": 21.1250, "to": -101.6860},
-        {"fl": 21.1250, "fo": -101.6860, "tl": 21.8853, "to": -102.2916},
-        {"fl": 21.8853, "fo": -102.2916, "tl": 20.6597, "to": -103.3496},
+        {"fl": PLANTA["lat"], "fo": PLANTA["lon"], "tl": r["lat"], "to": r["lon"]}
+        for _, r in clientes.iterrows()
     ])
-    layer_lines = pdk.Layer("LineLayer", rutas, get_source_position=["fo", "fl"], get_target_position=["to", "tl"], get_color=[28, 140, 90, 200], get_width=4)
-    layer_points = pdk.Layer("ScatterplotLayer", ciudades, get_position=["lon", "lat"], get_color=[14, 94, 58, 220], get_radius=9000, pickable=True)
-    st.pydeck_chart(pdk.Deck(map_style="road", initial_view_state=pdk.ViewState(latitude=21.2, longitude=-102.3, zoom=7, pitch=35), layers=[layer_lines, layer_points], tooltip={"text": "{name}"}), use_container_width=True)
+    layer_lines = pdk.Layer("LineLayer", rutas, get_source_position=["fo", "fl"], get_target_position=["to", "tl"], get_color=[28, 140, 90, 160], get_width=3)
+    layer_clientes = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"], get_color=[200, 138, 43, 230], get_radius=7000, pickable=True)
+    layer_planta = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"], get_color=[14, 94, 58, 255], get_radius=11000, pickable=True)
+    st.pydeck_chart(pdk.Deck(map_style="road", initial_view_state=pdk.ViewState(latitude=21.1, longitude=-102.6, zoom=6.5, pitch=40), layers=[layer_lines, layer_clientes, layer_planta], tooltip={"text": "{name}"}), use_container_width=True)
+    # Lista de clientes con distancias
+    st.markdown('<div style="font-size:10px; font-family:monospace; color:#7E8C86; margin-top:6px; line-height:1.8;">' +
+        '<span style="color:#0E5E3A; font-weight:700;">● PLANTA</span> Lagos de Moreno → ' +
+        ' · '.join([f"{r['name'].split(chr(183))[0].strip()} ({r['km']} km)" for _, r in clientes.iterrows()]) +
+        '</div>', unsafe_allow_html=True)
     if viable:
         st.markdown(f'<div class="badge-ok">VIABLE · {signo}{ganancia_actual:,.1f} M USD/año</div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div class="badge-no">NO VIABLE · ajusta precio o feed-in</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="card" style="margin-top:10px;"><div class="kpi-label">RUTA SELECCIONADA</div><div style="color:#15241D; font-weight:700; margin-top:4px; font-size:15px;">{ruta}</div><div style="color:#7E8C86; font-size:12px; margin-top:6px; line-height:1.5;">{"El Bio-LNG viaja en camión hasta 250 km y sustituye diésel en flotas e industria cercanas." if es_biolng else "El biometano se inyecta a la red local de Naturgy en zona Bajío Sur."}</div></div>', unsafe_allow_html=True)
-
+ 
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<p class="footer-note">Modelo basado en referente operativo Brimex Energy (800 t/d, 21,600 m³/d) · IEA 2025 · EIA 2025 · Gildea et al. 2025 · Capra et al. 2019 · SIAP 2023</p>', unsafe_allow_html=True)
