@@ -211,7 +211,7 @@ if es_biolng:
         ("biomasa_img.png", "Biomasa"),
         ("biodigestor.png", "Biodigestión"),
         ("Upgrading.png", "Upgrading"),
-        ("Licuefacción.png", "Licuefacción"),
+        ("Licuefaccion.png", "Licuefacción"),
         ("Transporte.png", "Transporte"),
     ]
 else:
@@ -226,7 +226,15 @@ else:
 cols = st.columns(len(pasos))
 for col, (img, titulo) in zip(cols, pasos):
     with col:
-        st.image(img, use_container_width=True)
+        try:
+            st.image(img, use_container_width=True)
+        except Exception:
+            st.markdown(
+                "<div style='height:120px;display:flex;align-items:center;"
+                "justify-content:center;background:#F4F7F5;border:1px dashed #B0BBB4;"
+                "border-radius:8px;color:#8A948E'>imagen no disponible</div>",
+                unsafe_allow_html=True,
+            )
         st.markdown(f"<p style='text-align:center;font-weight:600'>{titulo}</p>",
                     unsafe_allow_html=True)
 
