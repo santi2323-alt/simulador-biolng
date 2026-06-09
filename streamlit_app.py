@@ -31,7 +31,9 @@ st.markdown("""
     section[data-testid="stSidebar"] {
         background: #8A3F00;
         border-right: none;
-        min-width: 330px;
+        min-width: 360px;
+        width: 360px;
+        overflow: visible !important;
     }
 
     section[data-testid="stSidebar"] * { 
@@ -54,15 +56,34 @@ st.markdown("""
         border-color: #B85C12; 
     }
 
-    [data-testid="collapsedControl"] {
-        display: block !important;
-        background: #8A3F00 !important;
-        color: #FFFFFF !important;
-        border-radius: 0 8px 8px 0;
+    section[data-testid="stSidebar"] label {
+        color: #FFF3E6 !important;
+        font-weight: 500;
     }
 
-    [data-testid="collapsedControl"] svg { 
-        color: #FFFFFF !important; 
+    section[data-testid="stSidebar"] div[data-baseweb="slider"] {
+        padding-left: 8px;
+        padding-right: 8px;
+        overflow: visible !important;
+    }
+
+    section[data-testid="stSidebar"] div[data-baseweb="slider"] > div {
+        overflow: visible !important;
+    }
+
+    section[data-testid="stSidebar"] div[role="slider"] {
+        background-color: #F28C28 !important;
+        border: 3px solid #FFFFFF !important;
+        box-shadow: 0 0 0 2px rgba(242, 140, 40, 0.35) !important;
+    }
+
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        color: #FFE0BF !important;
+    }
+
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"] {
+        color: #FFFFFF !important;
     }
 
     h1, h2, h3, h4 { 
@@ -155,37 +176,6 @@ st.markdown("""
 
     #MainMenu, footer, header { 
         visibility: hidden; 
-    }
-
-    [data-testid="collapsedControl"] {
-        display: block !important;
-        background: #8A3F00 !important;
-        border-radius: 0 8px 8px 0;
-        padding: 8px 6px !important;
-    }
-
-    [data-testid="collapsedControl"] span,
-    [data-testid="collapsedControl"] p {
-        font-size: 0 !important;
-    }
-
-    [data-testid="collapsedControl"]::after {
-        content: "›";
-        color: #FFFFFF;
-        font-size: 24px;
-        font-weight: 700;
-    }
-
-    [data-testid="stSidebarCollapseButton"] span,
-    [data-testid="stSidebarCollapseButton"] p {
-        font-size: 0 !important;
-    }
-
-    [data-testid="stSidebarCollapseButton"]::after {
-        content: "‹";
-        color: #FFF3E6;
-        font-size: 22px;
-        font-weight: 700;
     }
 </style>
 """, unsafe_allow_html=True)
