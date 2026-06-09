@@ -66,7 +66,8 @@ st.markdown(f"""
 
     /* ── HERO ── */
     .ng-hero {{ background: {AZUL}; margin: 0 -4rem 24px -4rem; padding: 34px 48px 40px;
-        color: #fff; }}
+        color: #fff; position: relative; overflow: hidden; }}
+    .ng-hero > div {{ position: relative; z-index: 2; }}
     .ng-eyebrow {{ color: {NARANJA} !important; font-size: 12px; font-weight: 700;
         letter-spacing: 2px; text-transform: uppercase; }}
     .ng-title {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
@@ -132,6 +133,34 @@ st.markdown(f"""
     .map-legend .item {{ display: flex; align-items: center; gap: 7px; font-size: 12px; color: {GRIS_TX}; font-weight: 600; }}
     .legend-dot {{ width: 13px; height: 13px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px #D7E0E7; }}
     .legend-line {{ width: 22px; height: 3px; border-radius: 2px; }}
+
+    /* ── Panel de rutas ── */
+    .route-list {{ background: #FAFCFD; border: 1px solid #E3E9EE; border-radius: 10px; padding: 6px 4px; margin-top: 10px; }}
+    .route-row {{ display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-bottom: 1px solid #EDF1F4; }}
+    .route-row:last-child {{ border-bottom: none; }}
+    .route-dot {{ width: 11px; height: 11px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px #D7E0E7; flex: none; }}
+    .route-name {{ font-size: 12.5px; color: {GRIS_TX}; font-weight: 600; flex: 1; }}
+    .km-badge {{ font-size: 12px; font-weight: 700; color: {AZUL}; background: #EAF1F6; border-radius: 20px; padding: 2px 11px; }}
+    .km-badge.origen {{ color: {NARANJA}; background: #FDF0DE; }}
+    .route-row.planta .route-name {{ color: {AZUL}; font-weight: 700; }}
+
+    /* ── ANIMACIONES SUTILES (no mueven el layout) ── */
+    @keyframes barBreathe {{ 0%,100% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} }}
+    .ng-section-bar {{ animation: barBreathe 2.6s ease-in-out infinite; }}
+
+    @keyframes badgeGlow {{ 0%,100% {{ box-shadow: 0 0 0 0 rgba(91,168,41,0.0); }} 50% {{ box-shadow: 0 0 16px 2px rgba(91,168,41,0.40); }} }}
+    .badge-ok {{ animation: badgeGlow 2.4s ease-in-out infinite; }}
+
+    @keyframes heroSheen {{ 0% {{ background-position: -150% 0; }} 100% {{ background-position: 250% 0; }} }}
+    .ng-hero::after {{ content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+        background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.10) 48%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.10) 52%, transparent 62%);
+        background-size: 250% 100%; animation: heroSheen 7s ease-in-out infinite; }}
+
+    @keyframes cardLift {{ from {{ opacity: 0; transform: translateY(8px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+    .card {{ animation: cardLift 0.5s ease both; }}
+
+    @keyframes refBlink {{ 0%,100% {{ opacity: 0.55; }} 50% {{ opacity: 1; }} }}
+    .ng-section-ref {{ animation: refBlink 3s ease-in-out infinite; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -319,44 +348,70 @@ with right:
     # rutas de reparto
     layer_lines = pdk.Layer("LineLayer", rutas, get_source_position=["fo", "fl"], get_target_position=["to", "tl"],
                             get_color=[237, 139, 0, 200], get_width=4)
-    # etiqueta de distancia (pastilla blanca sobre cada ruta)
-    layer_km = pdk.Layer("TextLayer", clientes, get_position=["mid_lon", "mid_lat"], get_text="km_txt",
-                         get_size=13, get_color=[0, 73, 123, 255], billboard=True,
-                         background=True, get_background_color=[255, 255, 255, 235],
-                         font_family="Archivo, sans-serif", font_weight="bold")
+    # etiqueta de distancia sobre cada ruta
+    layer_km = pdk.Layer(
+        "TextLayer", clientes,
+        get_position=["mid_lon", "mid_lat"],
+        get_text="km_txt",
+        get_size=16,
+        get_color=[0, 56, 92, 255],
+        get_text_anchor="'middle'",
+        get_alignment_baseline="'center'",
+    )
     # clientes: anillo blanco + punto azul (marcador)
     layer_cli_ring = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"],
                                get_fill_color=[255, 255, 255, 255], get_radius=8500, radius_min_pixels=8)
     layer_cli = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"],
                           get_fill_color=[0, 73, 123, 235], get_radius=6000, radius_min_pixels=5, pickable=True)
-    layer_cli_txt = pdk.Layer("TextLayer", clientes, get_position=["lon", "lat"], get_text="etiqueta",
-                              get_size=11, get_color=[60, 74, 87, 255], billboard=True,
-                              get_pixel_offset=[0, -16], font_family="Archivo, sans-serif", font_weight="bold")
+    layer_cli_txt = pdk.Layer(
+        "TextLayer", clientes,
+        get_position=["lon", "lat"],
+        get_text="etiqueta",
+        get_size=12,
+        get_color=[40, 54, 67, 255],
+        get_pixel_offset=[0, -18],
+        get_text_anchor="'middle'",
+        get_alignment_baseline="'bottom'",
+    )
     # planta: marcador grande naranja con anillo blanco
     layer_pl_ring = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"],
                               get_fill_color=[255, 255, 255, 255], get_radius=14000, radius_min_pixels=13)
     layer_pl = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"],
                          get_fill_color=[237, 139, 0, 255], get_radius=11000, radius_min_pixels=10, pickable=True)
-    layer_pl_txt = pdk.Layer("TextLayer", planta_df, get_position=["lon", "lat"], get_text="name",
-                             get_size=13, get_color=[237, 139, 0, 255], billboard=True,
-                             get_pixel_offset=[0, -22], font_family="Archivo, sans-serif", font_weight="bold")
+    layer_pl_txt = pdk.Layer(
+        "TextLayer", planta_df,
+        get_position=["lon", "lat"],
+        get_text="name",
+        get_size=14,
+        get_color=[214, 120, 0, 255],
+        get_pixel_offset=[0, -24],
+        get_text_anchor="'middle'",
+        get_alignment_baseline="'bottom'",
+    )
 
     st.pydeck_chart(pdk.Deck(
         map_style="road",
         initial_view_state=pdk.ViewState(latitude=21.05, longitude=-102.25, zoom=6.7, pitch=0),
-        layers=[layer_lines, layer_cli_ring, layer_cli, layer_pl_ring, layer_pl, layer_km, layer_cli_txt, layer_pl_txt],
+        layers=[layer_lines, layer_cli_ring, layer_cli, layer_pl_ring, layer_pl, layer_km],
         tooltip={"html": "<b>{etiqueta}</b><br/>{km_txt} desde la planta",
                  "style": {"backgroundColor": "#00497B", "color": "white", "fontSize": "12px", "borderRadius": "6px", "padding": "6px 10px"}},
     ), use_container_width=True)
 
-    # leyenda
-    st.markdown(f"""
-    <div class="map-legend">
-        <div class="item"><span class="legend-dot" style="background:{NARANJA};"></span>Planta Bio-LNG</div>
-        <div class="item"><span class="legend-dot" style="background:{AZUL};"></span>Cliente / CEDIS</div>
-        <div class="item"><span class="legend-line" style="background:{NARANJA};"></span>Ruta de reparto (km)</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # panel de rutas (distancias siempre visibles, no depende del render del mapa)
+    filas = (
+        f'<div class="route-row planta">'
+        f'<span class="route-dot" style="background:{NARANJA};"></span>'
+        f'<span class="route-name">Planta Bio-LNG · Lagos de Moreno</span>'
+        f'<span class="km-badge origen">origen</span></div>'
+    )
+    for _, r in clientes.iterrows():
+        filas += (
+            f'<div class="route-row">'
+            f'<span class="route-dot" style="background:{AZUL};"></span>'
+            f'<span class="route-name">{r["etiqueta"]}</span>'
+            f'<span class="km-badge">{r["km_txt"]}</span></div>'
+        )
+    st.markdown(f'<div class="route-list">{filas}</div>', unsafe_allow_html=True)
 
     if viable:
         st.markdown(f'<div class="badge-ok" style="margin-top:10px;">VIABLE · {signo}{ganancia_actual:,.1f} M USD/año</div>', unsafe_allow_html=True)
