@@ -4,7 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 import pydeck as pdk
 import base64, os
-
+ 
 def _load_logo():
     try:
         with open("naturgy_logo.png", "rb") as f:
@@ -12,10 +12,10 @@ def _load_logo():
     except Exception:
         return None
 LOGO_B64 = _load_logo()
-
-
+ 
+ 
 st.set_page_config(page_title="Naturgy · Simulador Bio-LNG Jalisco", page_icon="◆", layout="wide", initial_sidebar_state="expanded")
-
+ 
 # ════════════════════════════════════════════════════════════════════════════
 #  IDENTIDAD VISUAL NATURGY
 #  Azul corporativo Pantone 302C ≈ #00497B  ·  Naranja 144C ≈ #ED8B00
@@ -28,7 +28,7 @@ ROJO = "#C0264A"
 GRIS_TX = "#3C4A57"
 GRIS_SUAVE = "#6B7A88"
 GRIS_BG = "#F4F6F8"
-
+ 
 SVG = {
     "biomasa": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5-2 7-6 7-11V4l-7 2-7-2v7c0 5 2 9 7 11z"/><path d="M12 22V9"/><path d="M9 12l3-2 3 2"/></svg>',
     "digestor": '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v8c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><circle cx="10" cy="11" r="0.8" fill="{c}"/><circle cx="13" cy="13" r="0.8" fill="{c}"/></svg>',
@@ -40,17 +40,17 @@ SVG = {
 }
 def svgico(name, color):
     return SVG[name].replace("{c}", color)
-
-
-
+ 
+ 
+ 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Narrow:wght@600;700&display=swap');
-
+ 
     .stApp {{ background: #FFFFFF; }}
     * {{ font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif !important; }}
     h1, h2, h3 {{ font-family: 'Archivo', sans-serif !important; }}
-
+ 
     /* ── BARRA SUPERIOR estilo header de naturgy.com ── */
     .ng-topbar {{
         background: {AZUL}; margin: -1.5rem -4rem 0 -4rem; padding: 16px 48px;
@@ -63,55 +63,54 @@ st.markdown(f"""
     .ng-logo-text {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
         font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }}
     .ng-nav {{ color: #B8D4E8 !important; font-size: 13px; font-weight: 500; }}
-
+ 
     /* ── HERO ── */
     .ng-hero {{ background: {AZUL}; margin: 0 -4rem 24px -4rem; padding: 34px 48px 40px;
-        color: #fff; position: relative; overflow: hidden; }}
-    .ng-hero > div {{ position: relative; z-index: 2; }}
+        color: #fff; }}
     .ng-eyebrow {{ color: {NARANJA} !important; font-size: 12px; font-weight: 700;
         letter-spacing: 2px; text-transform: uppercase; }}
     .ng-title {{ color: #FFFFFF !important; font-family: 'Archivo' !important;
         font-size: 40px; font-weight: 800; line-height: 1.05; margin: 8px 0 6px; letter-spacing: -0.5px; }}
     .ng-sub {{ color: #B8D4E8 !important; font-size: 15px; font-weight: 400; }}
-
+ 
     section[data-testid="stSidebar"] {{ background: {AZUL}; border: none; min-width: 320px; }}
     section[data-testid="stSidebar"] * {{ color: #DCEAF4 !important; }}
     section[data-testid="stSidebar"] h3 {{ color: #FFFFFF !important; font-family: 'Archivo' !important; }}
     section[data-testid="stSidebar"] hr {{ border-color: #1A5C87; }}
     .side-eyebrow {{ color: {NARANJA} !important; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }}
-
+ 
     [data-testid="collapsedControl"] {{ display: block !important; background: {AZUL} !important; border-radius: 0 8px 8px 0; padding: 8px 6px !important; }}
     [data-testid="collapsedControl"] span, [data-testid="collapsedControl"] p {{ font-size: 0 !important; }}
     [data-testid="collapsedControl"]::after {{ content: "›"; color: #FFFFFF; font-size: 24px; font-weight: 700; }}
     [data-testid="stSidebarCollapseButton"] span, [data-testid="stSidebarCollapseButton"] p {{ font-size: 0 !important; }}
     [data-testid="stSidebarCollapseButton"]::after {{ content: "‹"; color: #DCEAF4; font-size: 22px; font-weight: 700; }}
-
+ 
     h1, h2, h3, h4 {{ color: {AZUL} !important; }}
     p, label, span, div {{ color: {GRIS_TX}; }}
-
+ 
     .ng-section {{ display: flex; align-items: baseline; gap: 12px; margin: 22px 0 14px; }}
     .ng-section-bar {{ width: 4px; height: 22px; background: {NARANJA}; border-radius: 2px; }}
     .ng-section-title {{ font-family: 'Archivo' !important; font-size: 19px; font-weight: 700; color: {AZUL} !important; }}
     .ng-section-ref {{ font-size: 11px; color: {GRIS_SUAVE} !important; letter-spacing: 1px; margin-left: auto; }}
-
-    .card {{ background: #FFFFFF; border: 1px solid #E3E9EE; border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,73,123,0.06); }}
+ 
+    .card {{ background: #FFFFFF; border: 1px solid #E3E9 EE; border: 1px solid #E3E9EE; border-radius: 10px; padding: 18px 20px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,73,123,0.06); }}
     .kpi-label {{ font-size: 11px; color: {GRIS_SUAVE}; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600; }}
     .kpi-value {{ font-family: 'Archivo' !important; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; margin-top: 4px; }}
     .kpi-unit {{ font-size: 13px; color: {GRIS_SUAVE}; font-weight: 500; }}
-
+ 
     .badge-ok {{ background: #EDF7E6; border: 1px solid {VERDE}; color: #3D7A12; border-radius: 8px; padding: 13px; text-align: center; font-weight: 700; font-size: 14px; }}
     .badge-no {{ background: #FBECEF; border: 1px solid {ROJO}; color: #A01E3C; border-radius: 8px; padding: 13px; text-align: center; font-weight: 700; font-size: 14px; }}
-
+ 
     .ng-status {{ background: {AZUL}; border-radius: 10px; padding: 12px 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }}
     .ng-status span {{ color: #B8D4E8 !important; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }}
     .ng-status .on {{ color: {NARANJA} !important; }}
     @keyframes pulse {{ 0%,100% {{ opacity: 1; }} 50% {{ opacity: 0.45; }} }}
     .ng-status .on {{ animation: pulse 2s ease-in-out infinite; }}
-
+ 
     .footer-note {{ font-size: 11px; color: #9AA8B4; text-align: center; }}
     hr {{ border-color: #E3E9EE; }}
     #MainMenu, footer, header {{ visibility: hidden; }}
-
+ 
     @keyframes flowdot {{ 0% {{ left: 0%; opacity: 0; }} 12% {{ opacity: 1; }} 88% {{ opacity: 1; }} 100% {{ left: 100%; opacity: 0; }} }}
     .proc-wrap {{ display: flex; align-items: stretch; margin: 4px 0 8px; border: 1px solid #E3E9EE; border-radius: 10px; overflow: hidden; background: #FAFCFD; }}
     .proc-step {{ flex: 1; padding: 16px 8px; text-align: center; border-right: 1px solid #EDF1F4; }}
@@ -122,48 +121,9 @@ st.markdown(f"""
     .proc-conn {{ width: 40px; display: flex; align-items: center; }}
     .proc-line {{ width: 100%; height: 2px; background: #DDE7EE; position: relative; overflow: hidden; }}
     .proc-line::after {{ content: ""; position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; animation: flowdot 2.2s linear infinite; }}
-
-    /* ── Cadena de valor con fotos ── */
-    .vc-cap {{ text-align: center; font-family: 'Archivo' !important; font-weight: 700; color: {AZUL}; font-size: 14px; margin-top: 6px; }}
-    .vc-missing {{ height: 130px; display: flex; align-items: center; justify-content: center; background: #F4F6F8; border: 1px dashed #C5D2DC; border-radius: 8px; color: #9AA8B4; font-size: 13px; }}
-    div[data-testid="stImage"] img {{ border-radius: 8px; }}
-
-    /* ── Leyenda del mapa ── */
-    .map-legend {{ display: flex; gap: 18px; flex-wrap: wrap; align-items: center; background: #FAFCFD; border: 1px solid #E3E9EE; border-radius: 8px; padding: 10px 14px; margin-top: 10px; }}
-    .map-legend .item {{ display: flex; align-items: center; gap: 7px; font-size: 12px; color: {GRIS_TX}; font-weight: 600; }}
-    .legend-dot {{ width: 13px; height: 13px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px #D7E0E7; }}
-    .legend-line {{ width: 22px; height: 3px; border-radius: 2px; }}
-
-    /* ── Panel de rutas ── */
-    .route-list {{ background: #FAFCFD; border: 1px solid #E3E9EE; border-radius: 10px; padding: 6px 4px; margin-top: 10px; }}
-    .route-row {{ display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-bottom: 1px solid #EDF1F4; }}
-    .route-row:last-child {{ border-bottom: none; }}
-    .route-dot {{ width: 11px; height: 11px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px #D7E0E7; flex: none; }}
-    .route-name {{ font-size: 12.5px; color: {GRIS_TX}; font-weight: 600; flex: 1; }}
-    .km-badge {{ font-size: 12px; font-weight: 700; color: {AZUL}; background: #EAF1F6; border-radius: 20px; padding: 2px 11px; }}
-    .km-badge.origen {{ color: {NARANJA}; background: #FDF0DE; }}
-    .route-row.planta .route-name {{ color: {AZUL}; font-weight: 700; }}
-
-    /* ── ANIMACIONES SUTILES (no mueven el layout) ── */
-    @keyframes barBreathe {{ 0%,100% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} }}
-    .ng-section-bar {{ animation: barBreathe 2.6s ease-in-out infinite; }}
-
-    @keyframes badgeGlow {{ 0%,100% {{ box-shadow: 0 0 0 0 rgba(91,168,41,0.0); }} 50% {{ box-shadow: 0 0 16px 2px rgba(91,168,41,0.40); }} }}
-    .badge-ok {{ animation: badgeGlow 2.4s ease-in-out infinite; }}
-
-    @keyframes heroSheen {{ 0% {{ background-position: -150% 0; }} 100% {{ background-position: 250% 0; }} }}
-    .ng-hero::after {{ content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-        background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.10) 48%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.10) 52%, transparent 62%);
-        background-size: 250% 100%; animation: heroSheen 7s ease-in-out infinite; }}
-
-    @keyframes cardLift {{ from {{ opacity: 0; transform: translateY(8px); }} to {{ opacity: 1; transform: translateY(0); }} }}
-    .card {{ animation: cardLift 0.5s ease both; }}
-
-    @keyframes refBlink {{ 0%,100% {{ opacity: 0.55; }} 50% {{ opacity: 1; }} }}
-    .ng-section-ref {{ animation: refBlink 3s ease-in-out infinite; }}
 </style>
 """, unsafe_allow_html=True)
-
+ 
 # ── BARRA SUPERIOR + HERO estilo naturgy.com
 if LOGO_B64:
     logo_html = f'<img src="data:image/png;base64,{LOGO_B64}" style="height:34px; width:auto;" alt="Naturgy"/>'
@@ -180,7 +140,7 @@ st.markdown(f"""
     <div class="ng-sub">Lagos de Moreno, Región Altos Norte de Jalisco · Referente operativo: Brimex Energy · DS3001B Tec de Monterrey 2026</div>
 </div>
 """, unsafe_allow_html=True)
-
+ 
 # ── SIDEBAR ──────────────────────────────────────────────────────────────────
 st.sidebar.markdown('<div class="side-eyebrow">Parámetros de operación</div>', unsafe_allow_html=True)
 st.sidebar.markdown("### Ajusta los escenarios")
@@ -197,7 +157,7 @@ precio_carbono = st.sidebar.slider("Crédito de carbono (USD/ton CO₂eq)", 0, 2
 st.sidebar.markdown("<hr>", unsafe_allow_html=True)
 st.sidebar.markdown("**Sustitución de diésel**")
 clientes_diesel = st.sidebar.slider("Clientes activos que sustituyen diésel", 0, 5, 3, 1, help="AKRON, Lala, 2 CEDIS Walmart, Bimbo")
-
+ 
 # ── CÁLCULOS ─────────────────────────────────────────────────────────────────
 factor = biomasa / 800.0
 biometano_m3d = biomasa * 27.0
@@ -217,7 +177,7 @@ es_biolng = ruta.startswith("Bio-LNG")
 ganancia_actual = ganancia_lng if es_biolng else ganancia_red
 viable = ganancia_actual >= 0
 signo = "+" if ganancia_actual >= 0 else ""
-
+ 
 # ── BARRA DE ESTADO ──────────────────────────────────────────────────────────
 estado = "OPERANDO · RUTA BIO-LNG" if es_biolng else "OPERANDO · RUTA RED"
 st.markdown(f'''<div class="ng-status">
@@ -226,33 +186,7 @@ st.markdown(f'''<div class="ng-status">
     <span>REFERENTE BRIMEX 800 t/d</span>
     <span>{"ESTADO: VIABLE" if viable else "ESTADO: NO VIABLE"}</span>
 </div>''', unsafe_allow_html=True)
-
-# ── CADENA DE VALOR (FOTOS) ──────────────────────────────────────────────────
-st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Cadena de valor</div><div class="ng-section-ref">PROCESO</div></div>', unsafe_allow_html=True)
-if es_biolng:
-    pasos_img = [
-        ("biomasa_img.png", "Biomasa"),
-        ("biodigestor.png", "Biodigestión"),
-        ("Upgrading.png", "Upgrading"),
-        ("Licuefaccion.png", "Licuefacción"),
-        ("Transporte.png", "Transporte"),
-    ]
-else:
-    pasos_img = [
-        ("biomasa_img.png", "Biomasa"),
-        ("biodigestor.png", "Biodigestión"),
-        ("Upgrading.png", "Upgrading"),
-        ("Transporte.png", "Inyección a red"),
-    ]
-cols_img = st.columns(len(pasos_img))
-for col, (img, titulo) in zip(cols_img, pasos_img):
-    with col:
-        try:
-            st.image(img, use_container_width=True)
-        except Exception:
-            st.markdown("<div class='vc-missing'>imagen no disponible</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='vc-cap'>{titulo}</div>", unsafe_allow_html=True)
-
+ 
 # ── TIRA DE PROCESO ──────────────────────────────────────────────────────────
 rc = VERDE if es_biolng else AZUL_CLARO
 destino = "BIO-LNG · CAMIÓN" if es_biolng else "BIOMETANO · RED"
@@ -272,7 +206,7 @@ st.markdown(f"""
 </div>
 <style>.proc-line::after {{ background: {rc}; }} .proc-ico svg {{ vertical-align: middle; }}</style>
 """, unsafe_allow_html=True)
-
+ 
 # ── KPIs ─────────────────────────────────────────────────────────────────────
 st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Indicadores clave</div><div class="ng-section-ref">FIG. 1 · TIEMPO REAL</div></div>', unsafe_allow_html=True)
 def kpi(col, label, value, unit, color):
@@ -282,7 +216,7 @@ kpi(m1, "Ganancia anual estimada", f"{signo}{ganancia_actual:,.1f}", "M USD/año
 kpi(m2, "Biometano producido", f"{biometano_m3d:,.0f}", "m³/día", AZUL)
 kpi(m3, "Bio-LNG generado", f"{biolng_m3d:,.0f}", "m³/día", AZUL_CLARO)
 kpi(m4, "CO₂ evitado", f"{co2_evitado_ton:,.0f}", "ton/año", NARANJA)
-
+ 
 # ── GAUGES ───────────────────────────────────────────────────────────────────
 def gauge(value, title, vmin, vmax, color, ref=None):
     ind = dict(mode="gauge+number" + ("+delta" if ref is not None else ""), value=value,
@@ -297,13 +231,13 @@ def gauge(value, title, vmin, vmax, color, ref=None):
     fig = go.Figure(go.Indicator(**ind))
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=42, b=8), paper_bgcolor='#FFFFFF', transition={'duration': 500, 'easing': 'cubic-in-out'})
     return fig
-
+ 
 g1, g2, g3, g4 = st.columns(4)
 g1.plotly_chart(gauge(biomasa, "BIOMASA t/día", 200, 1600, NARANJA, ref=800), use_container_width=True, key="g1")
 g2.plotly_chart(gauge(biometano_m3d, "BIOMETANO m³/día", 0, 43200, AZUL, ref=21600), use_container_width=True, key="g2")
 g3.plotly_chart(gauge(biolng_m3d, "BIO-LNG m³/día", 0, 14256, AZUL_CLARO, ref=7128), use_container_width=True, key="g3")
 g4.plotly_chart(gauge(ganancia_actual, "GANANCIA M USD/año", -8, 4, VERDE if viable else ROJO, ref=0), use_container_width=True, key="g4")
-
+ 
 # ── GRÁFICA + MAPA ───────────────────────────────────────────────────────────
 left, right = st.columns([1.3, 1])
 with left:
@@ -316,108 +250,34 @@ with left:
     fig.add_trace(go.Scatter(x=xs, y=gan_red_x, name="Red Naturgy (con feed-in)", line=dict(color=AZUL_CLARO, width=2, dash='dot')))
     fig.add_hline(y=0, line_color="#C5D2DC", line_width=1)
     fig.add_vline(x=biomasa, line_color=NARANJA, line_width=2, line_dash="dash", annotation_text=f"  {biomasa} t/d", annotation_font_color=NARANJA)
-    fig.update_layout(plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", font=dict(color=GRIS_TX, family="Archivo", size=12), height=290, margin=dict(l=10, r=10, t=10, b=10), legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12), xaxis=dict(title="Biomasa (t/día)", gridcolor="#EDF1F4", zeroline=False), yaxis=dict(title="Ganancia (M USD/año)", gridcolor="#EDF1F4", zeroline=False))
+    fig.update_layout(plot_bgcolor="#FFFFFF", paper_bgcolor="#FFFFFF", font=dict(color=GRIS_TX, family="Barlow", size=12), height=290, margin=dict(l=10, r=10, t=10, b=10), legend=dict(bgcolor="rgba(0,0,0,0)", orientation="h", y=1.12), xaxis=dict(title="Biomasa (t/día)", gridcolor="#EDF1F4", zeroline=False), yaxis=dict(title="Ganancia (M USD/año)", gridcolor="#EDF1F4", zeroline=False))
     st.plotly_chart(fig, use_container_width=True, key="curva")
     st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Sustitución de diésel</div><div class="ng-section-ref">FIG. 3</div></div>', unsafe_allow_html=True)
     d1, d2 = st.columns(2)
     kpi(d1, "Diésel sustituido", f"{diesel_sustituido/1000:,.0f}", "mil L/año", NARANJA)
     kpi(d2, "CO₂ evitado (sustitución)", f"{co2_diesel:,.0f}", "ton/año", VERDE)
-
+ 
 with right:
     st.markdown('<div class="ng-section"><div class="ng-section-bar"></div><div class="ng-section-title">Corredor de distribución</div><div class="ng-section-ref">FIG. 4 · JALISCO</div></div>', unsafe_allow_html=True)
     PLANTA = {"lat": 21.3795, "lon": -101.9180}
     clientes = pd.DataFrame([
-        {"name": "AKRON", "zona": "Lagos de Moreno", "lat": 21.3850, "lon": -101.9050, "km": 7},
-        {"name": "Grupo Lala", "zona": "Aguascalientes", "lat": 21.8550, "lon": -102.2960, "km": 82},
-        {"name": "Walmart CEDIS", "zona": "Silao Bajío", "lat": 20.9480, "lon": -101.4280, "km": 92},
-        {"name": "Walmart CEDIS", "zona": "Tlajomulco GDL", "lat": 20.4700, "lon": -103.4450, "km": 197},
-        {"name": "Grupo Bimbo", "zona": "Zapopan GDL", "lat": 20.7060, "lon": -103.4530, "km": 198},
+        {"name": "AKRON · Lagos de Moreno", "lat": 21.3850, "lon": -101.9050, "km": 7},
+        {"name": "Grupo Lala · Aguascalientes", "lat": 21.8550, "lon": -102.2960, "km": 82},
+        {"name": "Walmart CEDIS · Silao Bajío", "lat": 20.9480, "lon": -101.4280, "km": 92},
+        {"name": "Walmart CEDIS · Tlajomulco GDL", "lat": 20.4700, "lon": -103.4450, "km": 197},
+        {"name": "Grupo Bimbo · Zapopan GDL", "lat": 20.7060, "lon": -103.4530, "km": 198},
     ])
-    clientes["etiqueta"] = clientes["name"] + " · " + clientes["zona"]
-    clientes["km_txt"] = clientes["km"].astype(str) + " km"
-    # punto medio de cada ruta para colocar la etiqueta de distancia
-    clientes["mid_lat"] = (clientes["lat"] + PLANTA["lat"]) / 2.0
-    clientes["mid_lon"] = (clientes["lon"] + PLANTA["lon"]) / 2.0
-
-    planta_df = pd.DataFrame([{
-        "name": "PLANTA Bio-LNG", "etiqueta": "PLANTA Bio-LNG · Lagos de Moreno",
-        "km_txt": "origen", "lat": PLANTA["lat"], "lon": PLANTA["lon"],
-    }])
+    planta_df = pd.DataFrame([{"name": "PLANTA Bio-LNG · Lagos de Moreno", "lat": PLANTA["lat"], "lon": PLANTA["lon"]}])
     rutas = pd.DataFrame([{"fl": PLANTA["lat"], "fo": PLANTA["lon"], "tl": r["lat"], "to": r["lon"]} for _, r in clientes.iterrows()])
-
-    # rutas de reparto
-    layer_lines = pdk.Layer("LineLayer", rutas, get_source_position=["fo", "fl"], get_target_position=["to", "tl"],
-                            get_color=[237, 139, 0, 200], get_width=4)
-    # etiqueta de distancia sobre cada ruta
-    layer_km = pdk.Layer(
-        "TextLayer", clientes,
-        get_position=["mid_lon", "mid_lat"],
-        get_text="km_txt",
-        get_size=16,
-        get_color=[0, 56, 92, 255],
-        get_text_anchor="'middle'",
-        get_alignment_baseline="'center'",
-    )
-    # clientes: anillo blanco + punto azul (marcador)
-    layer_cli_ring = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"],
-                               get_fill_color=[255, 255, 255, 255], get_radius=8500, radius_min_pixels=8)
-    layer_cli = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"],
-                          get_fill_color=[0, 73, 123, 235], get_radius=6000, radius_min_pixels=5, pickable=True)
-    layer_cli_txt = pdk.Layer(
-        "TextLayer", clientes,
-        get_position=["lon", "lat"],
-        get_text="etiqueta",
-        get_size=12,
-        get_color=[40, 54, 67, 255],
-        get_pixel_offset=[0, -18],
-        get_text_anchor="'middle'",
-        get_alignment_baseline="'bottom'",
-    )
-    # planta: marcador grande naranja con anillo blanco
-    layer_pl_ring = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"],
-                              get_fill_color=[255, 255, 255, 255], get_radius=14000, radius_min_pixels=13)
-    layer_pl = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"],
-                         get_fill_color=[237, 139, 0, 255], get_radius=11000, radius_min_pixels=10, pickable=True)
-    layer_pl_txt = pdk.Layer(
-        "TextLayer", planta_df,
-        get_position=["lon", "lat"],
-        get_text="name",
-        get_size=14,
-        get_color=[214, 120, 0, 255],
-        get_pixel_offset=[0, -24],
-        get_text_anchor="'middle'",
-        get_alignment_baseline="'bottom'",
-    )
-
-    st.pydeck_chart(pdk.Deck(
-        map_style="road",
-        initial_view_state=pdk.ViewState(latitude=21.05, longitude=-102.25, zoom=6.7, pitch=0),
-        layers=[layer_lines, layer_cli_ring, layer_cli, layer_pl_ring, layer_pl, layer_km],
-        tooltip={"html": "<b>{etiqueta}</b><br/>{km_txt} desde la planta",
-                 "style": {"backgroundColor": "#00497B", "color": "white", "fontSize": "12px", "borderRadius": "6px", "padding": "6px 10px"}},
-    ), use_container_width=True)
-
-    # panel de rutas (distancias siempre visibles, no depende del render del mapa)
-    filas = (
-        f'<div class="route-row planta">'
-        f'<span class="route-dot" style="background:{NARANJA};"></span>'
-        f'<span class="route-name">Planta Bio-LNG · Lagos de Moreno</span>'
-        f'<span class="km-badge origen">origen</span></div>'
-    )
-    for _, r in clientes.iterrows():
-        filas += (
-            f'<div class="route-row">'
-            f'<span class="route-dot" style="background:{AZUL};"></span>'
-            f'<span class="route-name">{r["etiqueta"]}</span>'
-            f'<span class="km-badge">{r["km_txt"]}</span></div>'
-        )
-    st.markdown(f'<div class="route-list">{filas}</div>', unsafe_allow_html=True)
-
+    layer_lines = pdk.Layer("LineLayer", rutas, get_source_position=["fo", "fl"], get_target_position=["to", "tl"], get_color=[237, 139, 0, 180], get_width=3)
+    layer_cli = pdk.Layer("ScatterplotLayer", clientes, get_position=["lon", "lat"], get_color=[0, 73, 123, 230], get_radius=7000, pickable=True)
+    layer_pl = pdk.Layer("ScatterplotLayer", planta_df, get_position=["lon", "lat"], get_color=[237, 139, 0, 255], get_radius=11000, pickable=True)
+    st.pydeck_chart(pdk.Deck(map_style="road", initial_view_state=pdk.ViewState(latitude=21.1, longitude=-102.6, zoom=6.5, pitch=40), layers=[layer_lines, layer_cli, layer_pl], tooltip={"text": "{name}"}), use_container_width=True)
     if viable:
-        st.markdown(f'<div class="badge-ok" style="margin-top:10px;">VIABLE · {signo}{ganancia_actual:,.1f} M USD/año</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="badge-ok">VIABLE · {signo}{ganancia_actual:,.1f} M USD/año</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div class="badge-no" style="margin-top:10px;">NO VIABLE · ajusta precio o feed-in</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="badge-no">NO VIABLE · ajusta precio o feed-in</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="card" style="margin-top:10px;"><div class="kpi-label">Ruta seleccionada</div><div style="color:{AZUL}; font-weight:700; margin-top:4px; font-size:15px;">{ruta}</div><div style="color:{GRIS_SUAVE}; font-size:12px; margin-top:6px; line-height:1.5;">{"El Bio-LNG viaja en camión hasta 198 km y sustituye diésel en industria y centros de distribución." if es_biolng else "El biometano se inyecta a la red local de Naturgy en zona Bajío Sur."}</div></div>', unsafe_allow_html=True)
-
+ 
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<p class="footer-note">Modelo basado en referente operativo Brimex Energy (800 t/d, 21,600 m³/d) · IEA 2025 · EIA 2025 · Gildea et al. 2025 · Capra et al. 2019 · SIAP 2023 · Clientes: AKRON, Grupo Lala, Walmart CEDIS, Grupo Bimbo</p>', unsafe_allow_html=True)
